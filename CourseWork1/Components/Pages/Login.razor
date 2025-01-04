@@ -1,0 +1,67 @@
+﻿@page "/"
+@using CourseWork1.Models
+@using CourseWork1.Services
+@inject IUserService userService
+@inject NavigationManager navigationManager
+@inject AuthenticationService authenticateUser
+
+
+<h3>Login</h3>
+<p> Redirect to Register page</p>
+
+<div>
+    <input type="text" placeholder="Username" @bind="username" />
+</div>
+<div>
+    <input type="text" placeholder="Password" @bind="password" />
+</div>
+<button type="button" @onclick="LoginUser">Register</button>
+
+
+<p>New Here,</p>
+ <NavLink href="register">
+           Signup
+ </NavLink>
+@code {
+    private string username;
+    private string password;
+    private string errormessage;
+
+    private async Task LoginUser()
+    {
+        try
+        {
+            var users = await userService.GetAllUsersAsync(); //storing all the existing users in users
+            var user = users.FirstOrDefault(u => u.UserName == username && u.Password == HashPassword(password));
+            if (user != null)
+            {
+                //setting the current authenticated user in state managemnet
+                authenticateUser.SetCurrentUser(user);
+
+                //Redirecting to the dashboard page
+                navigationManager.NavigateTo("/dashboard");
+            }
+            else
+            {
+                errormessage = "Invalid Username or Password";
+            }
+        }
+        catch(Exception ex)
+        {
+            errormessage = $"Error Occured during login process:{ex.Message}";
+        }
+    }
+
+
+    private string HashPassword(string password)
+    {
+        using (var sha256 = System.Security.Cryptography.SHA256.Create())
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(password);
+            var hash = sha256.ComputeHash(bytes);
+            return Convert.ToBase64String(hash);
+        }
+    }
+
+}
+

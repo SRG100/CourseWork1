@@ -1,9 +1,14 @@
 ﻿@inherits LayoutComponentBase
+@using CourseWork1.Services
+@inject AuthenticationService authenticateService
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+    @if (authenticateService.IsAuthenticated())
+    {
+        <div class="sidebar">
+            <NavMenu />
+         </div>
+    }
 
     <main>
         <div class="top-row px-4">

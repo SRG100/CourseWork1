@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using CourseWork1.Services;
+using Microsoft.Extensions.Logging;
 
 namespace CourseWork1
 {
@@ -15,9 +16,11 @@ namespace CourseWork1
                 });
 
             builder.Services.AddMauiBlazorWebView();
+            builder.Services.AddSingleton<IUserService, UserService>(); //dependency injection
+            builder.Services.AddSingleton<AuthenticationService>();
 
 #if DEBUG
-    		builder.Services.AddBlazorWebViewDeveloperTools();
+            builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
 

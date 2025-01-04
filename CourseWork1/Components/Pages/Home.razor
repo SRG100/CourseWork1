@@ -1,5 +1,61 @@
-﻿@page "/"
+﻿@page "/home"
 
-<h1>Hello, world!</h1>
+@* Selected Tags *@
+<div>
+    <label for="tags">Tags:</label>
+    <select multiple id="tags" @onchange="HandleTagSelection" style="width: 200px; height: 100px;">
+        @foreach (var tag in TagsList)
+        {
+            <option value="@tag">@tag</option>
+        }
+    </select>
+</div>
 
-Welcome to your new app.
+@* Add Custom Tag Input *@
+<div style="margin-top: 10px;">
+    <input type="text" @bind="NewTag" placeholder="Add custom tag..." />
+    <button @onclick="AddCustomTag">Add Tag</button>
+</div>
+
+@* Display Selected Tags *@
+<div style="margin-top: 10px;">
+    <strong>Selected Tags:</strong>
+    <ul>
+        @foreach (var tag in SelectedTags)
+        {
+            <li>@tag</li>
+        }
+    </ul>
+</div>
+
+@code {
+    // Default Tags
+    private List<string> TagsList = new List<string>
+    {
+        "Monthly", "Rent", "Groceries", "Food", "EMI", "Miscellaneous"
+    };
+
+    // Holds selected tags
+    private List<string> SelectedTags = new List<string>();
+
+    // For adding custom tags
+    private string NewTag = "";
+
+    // Handle selection changes
+    private void HandleTagSelection(ChangeEventArgs e)
+    {
+        var selectedValues = e.Value.ToString().Split(","); // Convert selected options to array
+        SelectedTags = selectedValues.Where(value => !string.IsNullOrWhiteSpace(value)).ToList();
+    }
+
+    // Add custom tag to the list
+    private void AddCustomTag()
+    {
+        if (!string.IsNullOrWhiteSpace(NewTag) && !TagsList.Contains(NewTag))
+        {
+            TagsList.Add(NewTag); // Add to the dropdown
+            SelectedTags.Add(NewTag); // Automatically select the custom tag
+        }
+        NewTag = ""; // Clear the input field
+    }
+}

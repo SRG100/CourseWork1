@@ -1,0 +1,100 @@
+﻿@page "/register"
+@using CourseWork1.Models
+@using CourseWork1.Services
+@inject IUserService userService
+@inject NavigationManager navigationManager
+
+<style>
+    .error-message{
+        color: darkred;
+    }
+</style>
+<h3>Register</h3>
+
+<div>
+    <form>
+        <div>
+            <input type="text" placeholder="Full Name" @bind="newUser.FullName" />
+        </div>
+        <div>
+            <input type="text" placeholder="Gender" @bind="newUser.Gender"/>
+        </div>
+        <div>
+            <input type="text" placeholder="Email" @bind="newUser.Email" />
+        </div>
+        <div>
+            <input type="text" placeholder="Unique UserName" @bind="newUser.UserName" />
+        </div>
+        <div>
+            <input type="text" placeholder="Password" @bind="newUser.Password" />
+        </div>
+        <div>
+            <input type="text" placeholder="Phone Number" @bind="newUser.PhoneNumber" />
+        </div>
+        <div>
+            <input type="text" placeholder="Address" @bind="newUser.Address" />
+        </div>
+        <div>
+            <input type="text" placeholder="Job Position" @bind="newUser.JobPosition" />
+        </div>
+        <div>
+            <input type="text" placeholder="Currency" @bind="newUser.Currency" />
+        </div>
+        <button type="button" @onclick="AddNewUser">Register</button>
+        @if (errorMessage != null)
+        {
+            <p class="error-message">@errorMessage</p>
+        }
+    </form>
+</div>
+
+@code {
+    
+
+    private User newUser = new User();
+    private string errorMessage;
+
+
+    private async Task AddNewUser()
+    {
+        try
+        {
+            //checking wheather there are any emplty feild left by the user
+            if (string.IsNullOrWhiteSpace(newUser.FullName)
+            || string.IsNullOrWhiteSpace(newUser.Gender)
+            || string.IsNullOrWhiteSpace(newUser.Email)
+            || string.IsNullOrWhiteSpace(newUser.PhoneNumber)
+            || string.IsNullOrWhiteSpace(newUser.Password)
+            || string.IsNullOrWhiteSpace(newUser.UserName)
+            || string.IsNullOrWhiteSpace(newUser.JobPosition)
+            || string.IsNullOrWhiteSpace(newUser.Currency)
+            || string.IsNullOrWhiteSpace(newUser.Address))
+            {
+                throw new Exception("Emply Space found, please insert data in all feild");
+            }
+
+            var existingUsers = await userService.GetAllUsersAsync();
+
+            if(existingUsers != null)
+            {
+                var sameUserId = existingUsers.FirstOrDefault(u => u.UserName == newUser.UserName);
+                if (sameUserId != null)
+                {
+                    throw new Exception("User with this user name already exist, select a diffrent user name");
+                }
+
+            }
+            await userService.SaveUserAsync(newUser);
+            //Redirecting to the dashboard page
+            navigationManager.NavigateTo("/");
+            newUser = new User();
+            errorMessage = null;
+
+
+        }
+        catch (Exception e)
+        {
+            errorMessage=e.Message;
+        }
+    }
+}
