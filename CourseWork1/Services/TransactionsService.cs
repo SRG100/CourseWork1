@@ -13,6 +13,7 @@ namespace CourseWork1.Services
     {
         private readonly string transactionFilePath = Path.Combine(AppContext.BaseDirectory, "Transactions.json");
 
+
         public async Task AddTransactionsAsync(Transaction transaction) 
         {
             try

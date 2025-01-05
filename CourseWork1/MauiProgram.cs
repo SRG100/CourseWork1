@@ -17,6 +17,8 @@ namespace CourseWork1
 
             builder.Services.AddMauiBlazorWebView();
             builder.Services.AddSingleton<IUserService, UserService>(); //dependency injection
+            builder.Services.AddSingleton<ITransactions, TransactionsService>();
+            builder.Services.AddSingleton<ITags, TagService>();
             builder.Services.AddSingleton<AuthenticationService>();
 
 #if DEBUG

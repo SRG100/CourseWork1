@@ -14,7 +14,9 @@ namespace CourseWork1.Models
         public int Amount { get; set; }
         public string TransactionType { get; set; }
         public string Tags { get; set; }
+        public DateTime TransactionDate { get; set; }
         public DateTime DebtDueDate { get; set; }
+        public string Note { get; set; }
         public string DebtSource { get; set; }
         public int User_id { get; set; }
     }

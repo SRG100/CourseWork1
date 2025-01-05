@@ -1,0 +1,200 @@
+﻿@page "/addtransaction"
+@using CourseWork1.Models
+@using CourseWork1.Services
+@inject ITransactions transactionsService
+@inject ITags tagService
+@inject AuthenticationService authenticateUser
+
+
+<h3>addTransaction</h3>
+<div>
+    <form>
+        
+        <div>
+            <label>Transaction Name:</label>
+            <input type="text" placeholder="" @bind="newTransaction.TransactionName" />
+            
+        </div>
+        <div>
+            <label>Transaction Type:</label>
+            <select @bind="newTransaction.TransactionType">
+                <option value=""></option>
+                <option value="Income">Income</option>
+                <option value="Expense">Expense</option>
+                <option value="Debt">Debt</option>
+            </select>
+        </div>
+        <div>
+            <label>Transaction Amount:</label>
+            <input type="number" placeholder="Amount" @bind="newTransaction.Amount" />
+        </div>
+        <div>
+            <label>Transaction Date:</label>
+            <input type="date" placeholder="Transaction Date" @bind="newTransaction.TransactionDate" />
+        </div>
+        <div>
+            <label>Select Tag:</label>
+            <select @bind="newTransaction.Tags">
+                <option value=""></option>
+                @foreach (var Tag in existingTags)
+                {
+                    <option value="@Tag.TransactionTag">@Tag.TransactionTag</option>
+                }
+                
+            </select>
+
+        </div>
+
+         
+        @if (newTransaction.Tags == null)
+        {
+            <button type="button" @onclick="AddCustomTagOption">Add Custom Tag :)</button> 
+            <br />
+        }
+        
+
+
+        @if (addnewTag)
+        {
+            <div>
+                <input type="text" placeholder="Add Tag" @bind="newTransaction.Tags" />
+                <button type="button" @onclick="AddCustomTag">Add Tag</button>
+
+            </div>
+        }
+
+        @if (newTransaction.TransactionType == "Debt")
+        {
+            
+            <div>
+                <input type="text" placeholder="Debt Source" @bind="newTransaction.DebtSource" />
+            </div>
+            <div>
+                <input type="date" placeholder="Debt Due Date" @bind="newTransaction.DebtDueDate" />
+            </div>
+        }
+        <button type="button" @onclick="AddNote">Add Custom Note :)</button>
+
+        @if (addNote)
+        {
+            <div>
+                <input type="text" placeholder="Add Tag" @bind="newTransaction.Note" />
+            </div>
+        }
+        
+
+
+        <button type="button" @onclick="AddNewTransaction">Add</button>
+        @if (errorMessage != null)
+        {
+            <p class="error-message">@errorMessage</p>
+        }
+    </form>
+</div>
+  
+
+
+@code {
+    private Transaction newTransaction = new Transaction();
+    private string errorMessage;
+    private Boolean addnewTag = false;
+    private Boolean addNote = false;
+    private List<Tags> existingTags = new List<Tags>();
+    private Tags newTag = new Tags();
+    private decimal totalBalance;
+    private decimal totalIncome;
+    private decimal totalExpense;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        existingTags = await tagService.GetTagsAsync();
+        newTransaction.TransactionDate = DateTime.Now;
+        newTransaction.DebtDueDate = DateTime.Now;
+    }
+
+    private async Task AddCustomTagOption()
+    {
+        addnewTag = true;
+
+
+    }
+
+    private async Task AddNote()
+    {
+        addNote = true;
+
+    }
+    private async Task AddCustomTag()
+    {
+        try
+        {
+            addnewTag = true;
+
+            var existingTags = await tagService.GetTagsAsync();
+            if (existingTags != null)
+            {
+                var sametag = existingTags.FirstOrDefault(et => et.TransactionTag == newTransaction.Tags);
+                if (sametag != null)
+                {
+                    throw new Exception("This Tag exists, add a diffrent tag name");
+                }
+
+            }
+            newTag.TransactionTag = newTransaction.Tags;
+            await tagService.AddTagAsync(newTag);
+            newTag = new Tags();
+            errorMessage = "Tags Added";
+
+
+        }
+        catch (Exception e)
+        {
+            errorMessage = e.Message;
+        }
+
+    }
+
+
+    private async Task AddNewTransaction()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(newTransaction.Tags))
+            {
+                throw new Exception("Emply Space found, please insert data in all feild");
+            }
+            int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            newTransaction.User_id = currentUserID;
+            var existingTransactionsOfUser = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
+            totalIncome = existingTransactionsOfUser.Where(t => t.TransactionType == "Income").Sum(t => t.Amount);
+            totalExpense = existingTransactionsOfUser.Where(t => t.TransactionType == "Expense").Sum(t => t.Amount);
+            totalBalance = totalIncome - totalExpense;
+            if (newTransaction.TransactionType == "Expense")
+            {
+                if (totalBalance !> newTransaction.Amount)
+                {
+                    throw new Exception("Insufficient Balance");
+                }
+            }
+
+            await transactionsService.AddTransactionsAsync(newTransaction);
+            //Redirecting to the dashboard page
+            newTransaction = new Transaction();
+            newTransaction.TransactionDate = DateTime.Now;
+            newTransaction.DebtDueDate = DateTime.Now;
+            errorMessage = null;
+            
+
+        }
+        catch(Exception ex)
+        {
+            errorMessage = ex.Message;
+
+        }
+
+    }
+    
+    
+
+}

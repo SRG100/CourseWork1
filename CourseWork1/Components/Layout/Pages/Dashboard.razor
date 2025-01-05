@@ -1,0 +1,149 @@
+﻿@page "/dashboard"
+@using CourseWork1.Models
+@using CourseWork1.Services
+@inject ITransactions transactionsService
+@inject ITags tagService
+@inject AuthenticationService authenticateUser
+
+
+<h3>Dashboard</h3>
+
+<div>
+    <label>Choose a :</label>
+    <input type="month"  @bind="Month" />
+    <button type="button" @onclick="SelectMonth"> Filter Month </button>
+</div>
+<div>
+    <h1>Income</h1>
+    <h2 style="color:Green">Total Income Amount:@totalIncome</h2>
+</div>
+<div>
+    <h1>Balance</h1>
+    <h2 style="color:yellow">Current balance info:@totalBalance</h2>
+</div>
+<div>
+    <h1>Expense</h1>
+    <h2 style ="color:orange">Debit info:@totalExpense</h2>
+</div>
+<div>
+    <h1>Debt</h1>
+    <h2 style ="color:Red">Debt info:@totalDebt</h2>
+</div>
+<div>
+    <h2 style ="color:darkred">Pending Debt:@pendingDebt</h2>
+</div>
+<div>
+    <h2 style="color:saddlebrown">Paid Debt:@paidDebt</h2>
+</div>
+
+
+@if (errormessage != null)
+{
+    @errormessage
+}
+
+<table>
+    <thead>
+        <tr>
+            <th> Transaction Name </th>
+
+            <th> TransactionType </th>
+            <th>  TransactionDate </th>
+            <th> Tags</th>
+            <th> Note </th>
+            <th>  Amount </th>
+            <th> DebtSource</th>
+            <th>DebtDueDate</th>
+        </tr>
+    </thead>
+    <tbody>
+
+        @foreach (var transaction in existingTransactions)
+        {
+            <tr>
+                <td> @transaction.TransactionName </td>
+                <td> @transaction.TransactionType </td>
+                <td>@transaction.TransactionDate.ToString("yyyy-MM-dd")</td>
+
+                <td> @transaction.Tags </td>
+                @if (@transaction.Note == null)
+                {
+                    <td> NO NOTES </td>
+
+                }
+                else
+                {
+                    <td>
+                        @transaction.Note
+                    </td>
+                }
+
+                <td> <strong> @transaction.Amount.ToString()</strong></td>
+                @if (transaction.TransactionType == "Income" || transaction.TransactionType == "Expense")
+                {
+                    <td>--NA--</td>
+                    <td>--NA--</td>
+                }
+                else
+                {
+                    <td>@transaction.DebtDueDate.ToString("yyyy-MM-dd")</td>
+                    <td>@transaction.DebtSource</td>
+                }
+
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<Transaction> existingTransactions = new List<Transaction>();
+    private List<Transaction> monthSpecificTransaction = new List<Transaction>();
+
+    private DateTime Month;
+    private decimal totalIncome;
+    private decimal totalExpense;
+    private decimal paidDebt;
+    private decimal totalDebt;
+    private string errormessage;
+    private string expenseMonth;
+
+    private decimal pendingDebt;
+    private decimal totalBalance;
+
+
+    //run all these when dashboard is first loaded
+    protected override async Task OnInitializedAsync()
+    {
+        expenseMonth = Month.ToString("MMMM");
+        int currentUserID = authenticateUser.GetCurrentUser().UserId;
+        await CalculateTotals(currentUserID);
+        Month = DateTime.Now;
+        await SelectMonth();
+    }
+    public async Task SelectMonth()
+    {
+
+        expenseMonth = Month.ToString("MMMM");
+        errormessage = expenseMonth;
+        int currentUserID = authenticateUser.GetCurrentUser().UserId;
+        await CalculateTotals(currentUserID);
+
+    }
+    public async Task CalculateTotals(int userId)
+    {
+        errormessage = $"Added{userId}";
+        existingTransactions = await transactionsService.GetTransactionsByUserIdAsync(userId);
+        monthSpecificTransaction = existingTransactions.FindAll(et => et.TransactionDate.ToString("MMMM") == expenseMonth);
+
+        existingTransactions = monthSpecificTransaction;
+        totalIncome = existingTransactions.Where(t => t.TransactionType == "Income").Sum(t => t.Amount);
+        totalExpense = existingTransactions.Where(t => t.TransactionType == "Expense").Sum(t => t.Amount);
+        totalDebt = existingTransactions.Where(t => t.TransactionType == "Debt").Sum(t => t.Amount);
+        paidDebt = existingTransactions.Where(t => t.TransactionType == "PaidDebt").Sum(t => t.Amount);
+        totalBalance = totalIncome - totalExpense;
+        pendingDebt = totalDebt - paidDebt;
+    }
+    
+
+
+}
