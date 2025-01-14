@@ -5,53 +5,64 @@
 @inject NavigationManager navigationManager
 @inject AuthenticationService authenticateUser
 
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudGrid Justify="Justify.Center" AlignItems="AlignItems.Center">
+        <MudItem xs="12" sm="6" lg="4">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudForm @ref="loginForm" @bind-IsValid="@isValid" >
+                    <MudText>Login</MudText>
+                    <MudTextField T="string" Label="Username" Required="true" Variant="Variant.Outlined" RequiredError="Username is required!" @bind-Value="username" />
+                    <MudTextField T="string" Label="Password" InputType="InputType.Password" Required="true" Variant="Variant.Outlined" RequiredError="Password is required!" @bind-Value="password" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!isValid)" Class="mt-4" OnClick="@LoginUser">Login</MudButton>
+                </MudForm>
+                <MudText Typo="Typo.body1" Class="mt-4">
+                    New here? <MudLink Href="register" Color="Color.Primary">Sign up</MudLink>
+                </MudText>
+            </MudPaper>
+            
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="4">
+            <MudImage Src="images/mony.jpg" Alt="Mony the dog" Elevation="25" Class="rounded-lg" />
+        </MudItem>
+    </MudGrid>
+</MudContainer>
 
-<h3>Login</h3>
-<p> Redirect to Register page</p>
 
-<div>
-    <input type="text" placeholder="Username" @bind="username" />
-</div>
-<div>
-    <input type="text" placeholder="Password" @bind="password" />
-</div>
-<button type="button" @onclick="LoginUser">Login</button>
-
-
-<p>New Here,</p>
- <NavLink href="register">
-           Signup
- </NavLink>
 @code {
+    private MudForm loginForm;
+    private bool isValid;
     private string username;
     private string password;
-    private string errormessage;
+    private string errorMessage;
 
     private async Task LoginUser()
     {
+        await loginForm.Validate();
+        if (!isValid)
+        {
+            return;
+        }
+
         try
         {
-            var users = await userService.GetAllUsersAsync(); //storing all the existing users in users
+            var users = await userService.GetAllUsersAsync();
             var user = users.FirstOrDefault(u => u.UserName == username && u.Password == HashPassword(password));
+
             if (user != null)
             {
-                //setting the current authenticated user in state managemnet
                 authenticateUser.SetCurrentUser(user);
-
-                //Redirecting to the dashboard page
                 navigationManager.NavigateTo("/dashboard");
             }
             else
             {
-                errormessage = "Invalid Username or Password";
+                errorMessage = "Invalid username or password.";
             }
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            errormessage = $"Error Occured during login process:{ex.Message}";
+            errorMessage = $"Error occurred during login: {ex.Message}";
         }
     }
-
 
     private string HashPassword(string password)
     {
@@ -62,6 +73,4 @@
             return Convert.ToBase64String(hash);
         }
     }
-
 }
-

@@ -13,8 +13,8 @@ namespace CourseWork1.Services
     {
         private readonly string transactionFilePath = Path.Combine(AppContext.BaseDirectory, "Transactions.json");
 
-
-        public async Task AddTransactionsAsync(Transaction transaction) 
+        
+        public async Task AddTransactionsAsync(Transaction transaction) //to add transaction to transaction json
         {
             try
             {
@@ -36,63 +36,6 @@ namespace CourseWork1.Services
             
         }
 
-
-        //method to retrive debit of an user
-        public async Task<List<Transaction>> GetDebitByUserIdAsync(int userId)
-        {
-            try
-            {
-                //all the transaction of a user is loaded
-                var transacations = await GetTransactionsByUserIdAsync(userId);
-                //getting the list of total debit transaction of the user
-                return (transacations ?? new List<Transaction>()).Where(t => t.TransactionType == "Debit").ToList();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error retrieving the debit for user {userId}: {ex.Message}");
-                throw;
-
-            }
-        }
-
-        //method to retrive credit of an user
-        public async Task<List<Transaction>> GetCreditByUserIdAsync(int userId)
-        {
-            try
-            {
-                //all the transaction of a user is loaded
-                var transacations = await GetTransactionsByUserIdAsync(userId);
-                //getting the list of total debit transaction of the user
-                return (transacations ?? new List<Transaction>()).Where(t => t.TransactionType == "Credit").ToList();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error retrieving the credit for user {userId}: {ex.Message}");
-                throw;
-
-            }
-        }
-
-        //method to retrive debt of an user
-        public async Task<List<Transaction>> GetDebtByUserIdAsync(int userId)
-        {
-            try
-            {
-                //all the transaction of a user is loaded
-                var transacations = await GetTransactionsByUserIdAsync(userId);
-                //getting the list of total debit transaction of the user
-                return (transacations ?? new List<Transaction>()).Where(t => t.TransactionType == "Debt").ToList();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error retrieving the debit for user {userId}: {ex.Message}");
-                throw;
-
-            }
-        }
-
-
-
         public async Task<List<Transaction>> GetTransactionsByUserIdAsync(int userId) 
         {
             try
@@ -109,6 +52,7 @@ namespace CourseWork1.Services
 
             }
         }
+        
 
         public async Task<List<Transaction>> GetTansactionAsync()
         {
@@ -122,6 +66,7 @@ namespace CourseWork1.Services
                 }
                 var json = await File.ReadAllTextAsync(transactionFilePath);
                 //if a json file exists then, it is saved in var jason
+
                 return JsonSerializer.Deserialize<List<Transaction>>(json) ?? new List<Transaction>();
                 // the json file is not null then it is deserialized and returned as a list
                 // else if the json file is null then a new list is returned
@@ -131,7 +76,7 @@ namespace CourseWork1.Services
                 Console.WriteLine($"A Error has been detcted during deserialization in transactionservice :{jsonEx.Message}");
                 throw;
             }
-            catch (IOException ioEx)
+            catch (IOException ioEx) // if a error arises in I/O of transaction service
             {
                 Console.WriteLine($"I/O error has occured in transactionservice:{ioEx.Message}");
                 throw;
@@ -143,7 +88,7 @@ namespace CourseWork1.Services
             }
         }
 
-        private async Task SaveTransactionAsync(List<Transaction> transactions)
+        private async Task SaveTransactionAsync(List<Transaction> transactions) // to save a transaction list into json file
         {
             try
             {

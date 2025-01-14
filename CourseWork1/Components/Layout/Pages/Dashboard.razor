@@ -42,27 +42,27 @@
     @errormessage
 }
 
-<table>
+<table class="table">
     <thead>
         <tr>
-            <th> Transaction Name </th>
+            <th scope="col"> Transaction Name </th>
 
-            <th> TransactionType </th>
-            <th>  TransactionDate </th>
-            <th> Tags</th>
-            <th> Note </th>
-            <th>  Amount </th>
-            <th> DebtSource</th>
-            <th>DebtDueDate</th>
+            <th scope="col"> TransactionType </th>
+            <th scope="col">  TransactionDate </th>
+            <th scope="col"> Tags</th>
+            <th scope="col"> Note </th>
+            <th scope="col">  Amount </th>
+            <th scope ="col"> DebtSource</th>
+            <th scope ="col">DebtDueDate</th>
         </tr>
     </thead>
     <tbody>
 
         @foreach (var transaction in existingTransactions)
         {
-            <tr>
+            <tr scope="row">
                 <td> @transaction.TransactionName </td>
-                <td> @transaction.TransactionType </td>
+                <td class="btn btn-outline-success"> @transaction.TransactionType </td>
                 <td>@transaction.TransactionDate.ToString("yyyy-MM-dd")</td>
 
                 <td> @transaction.Tags </td>
@@ -96,8 +96,8 @@
 </table>
 
 @code {
-    private List<Transaction> existingTransactions = new List<Transaction>();
-    private List<Transaction> monthSpecificTransaction = new List<Transaction>();
+    private List<Transaction> existingTransactions = new List<Transaction>(); //for list of transaction class
+    private List<Transaction> monthSpecificTransaction = new List<Transaction>(); 
 
     private DateTime Month;
     private decimal totalIncome;
@@ -120,30 +120,27 @@
         Month = DateTime.Now;
         await SelectMonth();
     }
+    //to select the specific month for filtering
     public async Task SelectMonth()
     {
-
         expenseMonth = Month.ToString("MMMM");
         errormessage = expenseMonth;
         int currentUserID = authenticateUser.GetCurrentUser().UserId;
         await CalculateTotals(currentUserID);
 
     }
+
+    //to calculate the total transactions values
     public async Task CalculateTotals(int userId)
     {
-        errormessage = $"Added{userId}";
-        existingTransactions = await transactionsService.GetTransactionsByUserIdAsync(userId);
-        monthSpecificTransaction = existingTransactions.FindAll(et => et.TransactionDate.ToString("MMMM") == expenseMonth);
-
-        existingTransactions = monthSpecificTransaction;
-        totalIncome = existingTransactions.Where(t => t.TransactionType == "Income").Sum(t => t.Amount);
-        totalExpense = existingTransactions.Where(t => t.TransactionType == "Expense").Sum(t => t.Amount);
-        totalDebt = existingTransactions.Where(t => t.TransactionType == "Debt").Sum(t => t.Amount);
-        paidDebt = existingTransactions.Where(t => t.TransactionType == "PaidDebt").Sum(t => t.Amount);
-        totalBalance = totalIncome - totalExpense;
+        existingTransactions = await transactionsService.GetTransactionsByUserIdAsync(userId);//to get existing transactions based on the logged in user
+        monthSpecificTransaction = existingTransactions.FindAll(et => et.TransactionDate.ToString("MMMM") == expenseMonth); // getting the transactions based on the month selected
+        totalIncome = monthSpecificTransaction.Where(t => t.TransactionType == "Income").Sum(t => t.Amount);
+        totalExpense = monthSpecificTransaction.Where(t => t.TransactionType == "Expense").Sum(t => t.Amount);
+        totalDebt = monthSpecificTransaction.Where(t => t.TransactionType == "Debt").Sum(t => t.Amount);
+        paidDebt = monthSpecificTransaction.Where(t => t.TransactionType == "PaidDebt").Sum(t => t.Amount);
+        totalBalance = totalIncome - totalExpense + totalDebt; //adding total debt as well beacuse the user cant pay with the collected
         pendingDebt = totalDebt - paidDebt;
+        existingTransactions = monthSpecificTransaction;
     }
-    
-
-
 }

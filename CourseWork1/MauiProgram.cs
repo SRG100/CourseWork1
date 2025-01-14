@@ -1,5 +1,7 @@
 ﻿using CourseWork1.Services;
 using Microsoft.Extensions.Logging;
+using MudBlazor.Services;
+
 
 namespace CourseWork1
 {
@@ -20,6 +22,8 @@ namespace CourseWork1
             builder.Services.AddSingleton<ITransactions, TransactionsService>();
             builder.Services.AddSingleton<ITags, TagService>();
             builder.Services.AddSingleton<AuthenticationService>();
+            builder.Services.AddMudServices(); //adding mudblazor service
+
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

@@ -2,6 +2,11 @@
 @using CourseWork1.Services
 @inject AuthenticationService authenticateService
 
+
+ <MudThemeProvider />
+ <MudDialogProvider />
+ <MudSnackbarProvider />
+
 <div class="page">
     @if (authenticateService.IsAuthenticated())
     {

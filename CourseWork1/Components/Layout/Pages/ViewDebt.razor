@@ -1,6 +1,92 @@
 ﻿@page "/viewdebt"
+@using CourseWork1.Models
+@using CourseWork1.Services
+@inject ITransactions transactionsService
+@inject AuthenticationService authenticateUser
+
+
+
+
+@if (errormessage!=null)
+{
+    <h1 style="color:red">@errormessage</h1>
+}
 <h3>viewDebt</h3>
+<div>
+    <h1>Debt</h1>
+    <h2 style="color:Red">Debt info:@totalDebt</h2>
+</div>
+<div>
+    <h2 style="color:darkred">Pending Debt:@pendingDebt</h2>
+</div>
+<div>
+    <h2 style="color:saddlebrown">Paid Debt:@paidDebt</h2>
+</div>
+<button type="button" @onclick="Paydebt"> Pay Debt </button>
 
 @code {
+    private List<Transaction> existingTransactions = new List<Transaction>();
+    private List<Transaction> monthSpecificTransaction = new List<Transaction>();
+
+    private Transaction newDebt = new Transaction();
+    private DateTime Month;
+    private decimal totalIncome;
+    private decimal totalExpense;
+    private decimal paidDebt;
+    private decimal totalDebt;
+    private string errormessage;
+    private string expenseMonth;
+
+    private decimal pendingDebt;
+    private decimal totalBalance;
+
+    protected override async Task OnInitializedAsync()
+    {
+        int currentUserID = authenticateUser.GetCurrentUser().UserId;
+
+        await CalculateTotals(currentUserID);
+    }
+
+    public async Task Paydebt()
+    {
+        try
+        {
+            if (pendingDebt > totalBalance)
+            {
+    
+                errormessage = "Cant pay debt without enough balance";
+
+            }
+            int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            newDebt.User_id = currentUserID;
+            newDebt.Amount = pendingDebt;
+            newDebt.TransactionName = "Debt Pay";
+            newDebt.TransactionType = "PaidDebt";
+            newDebt.Tags = "DebtPay";
+            newDebt.TransactionDate = DateTime.Now;
+            await transactionsService.AddTransactionsAsync(newDebt);
+            newDebt = new Transaction();
+            newDebt.TransactionDate = DateTime.Now;
+            errormessage = null;
+            await CalculateTotals(currentUserID);
+        }
+        catch(Exception e)
+        {
+            
+        }
+
+    }
+
+    public async Task CalculateTotals(int userId)
+    {
+        errormessage = $"Added{userId}";
+        existingTransactions = await transactionsService.GetTransactionsByUserIdAsync(userId);
+        totalIncome = existingTransactions.Where(t => t.TransactionType == "Income").Sum(t => t.Amount);
+        totalExpense = existingTransactions.Where(t => t.TransactionType == "Expense").Sum(t => t.Amount);
+        totalDebt = existingTransactions.Where(t => t.TransactionType == "Debt").Sum(t => t.Amount);
+        paidDebt = existingTransactions.Where(t => t.TransactionType == "PaidDebt").Sum(t => t.Amount);
+        totalBalance = totalIncome - totalExpense - totalDebt; //adding total debt as well beacuse the user cant pay with the collected
+        pendingDebt = totalDebt - paidDebt;
+    }
 
 }

@@ -11,7 +11,7 @@ namespace CourseWork1.Models
     {
         public int TransactionId { get; set; }
         public string TransactionName { get; set; }
-        public int Amount { get; set; }
+        public decimal Amount { get; set; }
         public string TransactionType { get; set; }
         public string Tags { get; set; }
         public DateTime TransactionDate { get; set; }
