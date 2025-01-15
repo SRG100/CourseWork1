@@ -5,41 +5,90 @@
 @inject ITags tagService
 @inject AuthenticationService authenticateUser
 
+<style>
+    .top{
+        width: 150px;
+        margin:20px;
+        align-content:center;
+        justify-content:center;
+    }
+
+    .form-control{
+        
+    }
+
+</style>
 
 <h3>Dashboard</h3>
 
-<div>
-    <label>Choose a :</label>
-    <input type="month"  @bind="Month" />
-    <button type="button" @onclick="SelectMonth"> Filter Month </button>
+
+
+<div class=" top">
+    <label for="monthPicker" class="form-label">Choose a :</label>
+    <input type="month" @bind="Month" data-provide="datepicker" class="form-control" />
+    <button type="button" class="btn btn-outline-primary" @onclick="SelectMonth"> Filter Month </button>
 </div>
-<div>
-    <h1>Income</h1>
-    <h2 style="color:Green">Total Income Amount:@totalIncome</h2>
-</div>
-<div>
-    <h1>Balance</h1>
-    <h2 style="color:yellow">Current balance info:@totalBalance</h2>
-</div>
-<div>
-    <h1>Expense</h1>
-    <h2 style ="color:orange">Debit info:@totalExpense</h2>
-</div>
-<div>
-    <h1>Debt</h1>
-    <h2 style ="color:Red">Debt info:@totalDebt</h2>
-</div>
-<div>
-    <h2 style ="color:darkred">Pending Debt:@pendingDebt</h2>
-</div>
-<div>
-    <h2 style="color:saddlebrown">Paid Debt:@paidDebt</h2>
+
+<div class="container">
+    <div class="row">
+
+        <div class="col-md-4 col-xl-3">
+            <div class="card bg-c-blue order-card">
+                <div class="card-block">
+                    <h6 class="m-b-20">Total Income this month</h6>
+                    <h2 class="text-right">@totalIncome</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-xl-3">
+            <div class="card bg-c-yellow order-card">
+                <div class="card-block">
+                    <h6 class="m-b-20">Total Expense this month</h6>
+                    <h2 class="text-right">@totalExpense</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-xl-3">
+            <div class="card bg-c-green order-card">
+                <div class="card-block">
+                    <h6 class="m-b-20">Your balance this month:</h6>
+                    <h2 class="text-right">@totalBalance</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-xl-3">
+            <div class="card bg-c-pink order-card">
+                <div class="card-block">
+                    <h6 class="m-b-20">Your total debt this month:</h6>
+                    <h2 class="text-right">@totalDebt</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-xl-3">
+            <div class="card bg-c-red order-card">
+                <div class="card-block">
+                    <h6 class="m-b-20">Your pending debt is:</h6>
+                    <h2 class="text-right">@pendingDebt</h2>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>
 
 
 @if (errormessage != null)
 {
-    @errormessage
+    <div id="popup1" class="overlay">
+        <div class="popup">
+            <h2>Error Message</h2>
+            @* <a class="close" href="#">&times;</a> *@
+            <div class="content">
+                @errormessage
+            </div>
+        </div>
+    </div>
+
 }
 
 <table class="table">
@@ -51,9 +100,12 @@
             <th scope="col">  TransactionDate </th>
             <th scope="col"> Tags</th>
             <th scope="col"> Note </th>
-            <th scope="col">  Amount </th>
-            <th scope ="col"> DebtSource</th>
-            <th scope ="col">DebtDueDate</th>
+            <th scope="col">  Amount
+                <button type="button" @onclick="Up"> <i class="fa-solid fa-arrow-up"></i> </button>
+
+            </th>
+            <th scope="col"> DebtSource</th>
+            <th scope="col">DebtDueDate</th>
         </tr>
     </thead>
     <tbody>
@@ -62,7 +114,7 @@
         {
             <tr scope="row">
                 <td> @transaction.TransactionName </td>
-                <td class="btn btn-outline-success"> @transaction.TransactionType </td>
+                <td> @transaction.TransactionType </td>
                 <td>@transaction.TransactionDate.ToString("yyyy-MM-dd")</td>
 
                 <td> @transaction.Tags </td>
@@ -97,15 +149,17 @@
 
 @code {
     private List<Transaction> existingTransactions = new List<Transaction>(); //for list of transaction class
-    private List<Transaction> monthSpecificTransaction = new List<Transaction>(); 
+    private List<Transaction> monthSpecificTransaction = new List<Transaction>();
 
     private DateTime Month;
+    private Boolean AmountUp;
     private decimal totalIncome;
     private decimal totalExpense;
     private decimal paidDebt;
     private decimal totalDebt;
     private string errormessage;
     private string expenseMonth;
+    private string expenseYear;
 
     private decimal pendingDebt;
     private decimal totalBalance;
@@ -115,15 +169,31 @@
     protected override async Task OnInitializedAsync()
     {
         expenseMonth = Month.ToString("MMMM");
+        expenseYear = Month.ToString("yyyy");
         int currentUserID = authenticateUser.GetCurrentUser().UserId;
         await CalculateTotals(currentUserID);
         Month = DateTime.Now;
         await SelectMonth();
     }
+    public async Task Up()
+    {
+        if (AmountUp == true)
+        {
+            existingTransactions = monthSpecificTransaction.OrderBy(t => t.Amount).Take(5).ToList();
+            AmountUp = false;
+
+        }
+        else
+        {
+            AmountUp = true;
+            existingTransactions = monthSpecificTransaction.OrderByDescending(t => t.Amount).Take(5).ToList();
+        }
+    }
     //to select the specific month for filtering
     public async Task SelectMonth()
     {
         expenseMonth = Month.ToString("MMMM");
+        expenseYear = Month.ToString("yyyy");
         errormessage = expenseMonth;
         int currentUserID = authenticateUser.GetCurrentUser().UserId;
         await CalculateTotals(currentUserID);
@@ -134,13 +204,17 @@
     public async Task CalculateTotals(int userId)
     {
         existingTransactions = await transactionsService.GetTransactionsByUserIdAsync(userId);//to get existing transactions based on the logged in user
-        monthSpecificTransaction = existingTransactions.FindAll(et => et.TransactionDate.ToString("MMMM") == expenseMonth); // getting the transactions based on the month selected
+        monthSpecificTransaction = existingTransactions
+                                    .FindAll(et => et.TransactionDate.ToString("MMMM") == expenseMonth 
+                                    &&
+                                    et.TransactionDate.ToString("yyyy") == expenseYear).ToList(); // getting the transactions based on the month selected
         totalIncome = monthSpecificTransaction.Where(t => t.TransactionType == "Income").Sum(t => t.Amount);
         totalExpense = monthSpecificTransaction.Where(t => t.TransactionType == "Expense").Sum(t => t.Amount);
         totalDebt = monthSpecificTransaction.Where(t => t.TransactionType == "Debt").Sum(t => t.Amount);
         paidDebt = monthSpecificTransaction.Where(t => t.TransactionType == "PaidDebt").Sum(t => t.Amount);
         totalBalance = totalIncome - totalExpense + totalDebt; //adding total debt as well beacuse the user cant pay with the collected
         pendingDebt = totalDebt - paidDebt;
-        existingTransactions = monthSpecificTransaction;
+        existingTransactions = monthSpecificTransaction.OrderByDescending(t => t.Amount).Take(5).ToList();
+        AmountUp = true;
     }
 }

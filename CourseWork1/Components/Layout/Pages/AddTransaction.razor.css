@@ -1,0 +1,78 @@
+﻿.container{
+/*    background-color:red;*/
+margin-top:20px;
+    width:400px;
+    align-items:center;
+/*    text-align:center;*/
+
+}
+.container h3{
+    align-items:center;
+    text-align:center;
+}
+.form-group{
+    margin:15px;
+}
+.form-group label{
+    font-size:17px;
+}
+
+.form-input {
+    width: 100%;
+    border: 1px solid #ebebeb;
+    border-radius: 5px;
+    padding: 10px 15px;
+    box-sizing: border-box;
+    font-size: 13px;
+    font-weight: 500;
+    color: #222;
+}
+
+    .form-input:focus {
+        border: 1px solid transparent;
+        border-image-source: linear-gradient(to right, #9face6, #74ebd5);
+        border-image-slice: 1;
+        border-radius: 5px;
+        background-origin: border-box;
+        background-clip: content-box, border-box;
+    }
+
+.form-submit {
+    width: 100%;
+    border-radius: 5px;
+    padding: 12px 15px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    border: none;
+    background-image: linear-gradient(to bottom, #a445c7, #4624c4);
+    transition: transform 0.2s ease-in-out;
+}
+
+    .form-submit:hover {
+        transform: scale(1.03);
+    }
+
+.add-tag{
+
+}
+
+    input[type="checkbox"]:not(old) + label > span {
+        width: 10px;
+        height: 10px;
+        margin-right: 10px;
+    }
+
+@media screen and (max-width: 768px) {
+    .form-input, .form-submit {
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .signup-content {
+        padding: 30px 20px; /* Compact padding for small devices */
+    }
+}

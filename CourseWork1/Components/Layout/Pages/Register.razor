@@ -1,100 +1,116 @@
 ﻿@page "/register"
 @using CourseWork1.Models
 @using CourseWork1.Services
+@using MudBlazor
+
 @inject IUserService userService
+
 @inject NavigationManager navigationManager
 
-<style>
-    .error-message{
-        color: darkred;
-    }
-</style>
-<h3>Register</h3>
 
-<div>
-    <form>
-        <div>
-            <input type="text" placeholder="Full Name" @bind="newUser.FullName" />
-        </div>
-        <div>
-            <input type="text" placeholder="Gender" @bind="newUser.Gender"/>
-        </div>
-        <div>
-            <input type="text" placeholder="Email" @bind="newUser.Email" />
-        </div>
-        <div>
-            <input type="text" placeholder="Unique UserName" @bind="newUser.UserName" />
-        </div>
-        <div>
-            <input type="text" placeholder="Password" @bind="newUser.Password" />
-        </div>
-        <div>
-            <input type="text" placeholder="Phone Number" @bind="newUser.PhoneNumber" />
-        </div>
-        <div>
-            <input type="text" placeholder="Address" @bind="newUser.Address" />
-        </div>
-        <div>
-            <input type="text" placeholder="Job Position" @bind="newUser.JobPosition" />
-        </div>
-        <div>
-            <input type="text" placeholder="Currency" @bind="newUser.Currency" />
-        </div>
-        <button type="button" @onclick="AddNewUser">Register</button>
-        @if (errorMessage != null)
-        {
-            <p class="error-message">@errorMessage</p>
-        }
-    </form>
-</div>
+
+<MudContainer Width="MaxWidth.Medium" Class="mt-4">
+    <MudGrid Justify="Justify.Center" AlignItems="AlignItems.Center">
+        <MudItem xs="12" sm="6" lg="4">
+            <MudPaper Class="pa-4" Elevation="2">
+                <MudForm @ref="registerForm" @bind-IsValid="@isValid">
+                    <MudText>Register</MudText>
+                    <MudTextField T="string" Label="Full Name" Required="true" Variant="Variant.Outlined" RequiredError="Full Name is required!" @bind-Value="newUser.FullName" />
+                    <MudTextField T="string" Label="Username" Required="true" Variant="Variant.Outlined" RequiredError="Username is required!" @bind-Value="newUser.UserName" />
+                    <MudTextField T="string" Label="Password" InputType="InputType.Password" Required="true" Variant="Variant.Outlined" RequiredError="Password is required!" @bind-Value="newUser.Password" />
+                    @* For gender and email *@
+                    <MudGrid Spacing="2">
+                        <MudItem xs="6">
+                            <MudTextField T="string" Label="Gender" Required="true" Variant="Variant.Outlined" RequiredError="Gender is required!" @bind-Value="newUser.Gender" />
+
+                        </MudItem>
+
+                        <MudItem xs="6">
+                            <MudTextField T="string" Label="Email" Required="true" Variant="Variant.Outlined" RequiredError="Email is required!" @bind-Value="newUser.Email" />
+                        </MudItem>
+                    </MudGrid>
+                    @* For phone number and address *@
+                    <MudGrid Spacing="2">
+                        <MudItem xs="6">
+                            <MudTextField T="string" Label="Phone Number" Required="true" Variant="Variant.Outlined" RequiredError="Phone Number is required!" @bind-Value="newUser.PhoneNumber" />
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudTextField T="string" Label="Address" Required="true" Variant="Variant.Outlined" RequiredError="Address is required!" @bind-Value="newUser.Address" />
+                        </MudItem>
+                    </MudGrid>
+                    @* For job position and currency *@
+                    <MudGrid Spacing="2">
+                        <MudItem xs="6">
+                            <MudTextField T="string" Label="Job Position" Required="true" Variant="Variant.Outlined"
+                                          RequiredError="Job Position is required!" @bind-Value="newUser.JobPosition" />
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudTextField T="string" Label="Currency" Required="true" Variant="Variant.Outlined"
+                                          RequiredError="Currency is required!" @bind-Value="newUser.Currency" />
+
+                        </MudItem>
+                    </MudGrid>
+
+
+
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" OnClick="@RegisterUser">Register</MudButton>
+                </MudForm>
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Error" Class="mt-2">@errorMessage</MudText>
+                }
+                <MudText Typo="Typo.body1" Class="mt-4">
+                    Already have an account? <MudLink Href="/" Color="Color.Primary">Login</MudLink>
+                </MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="4">
+            <MudImage Src="NewFolder\loginsign.png" Alt="Registration" Elevation="25" Class="rounded-lg" />
+        </MudItem>
+    </MudGrid>
+</MudContainer>
 
 @code {
-    
-
-    private User newUser = new User();
+    private MudForm registerForm;
+    private bool isValid;
     private string errorMessage;
+    private User newUser = new User();
 
-
-    private async Task AddNewUser()
+    private async Task RegisterUser()
     {
+        await registerForm.Validate();
+        if (!isValid)
+        {
+            return;
+        }
+
         try
         {
-            //checking wheather there are any emplty feild left by the user
-            if (string.IsNullOrWhiteSpace(newUser.FullName)
-            || string.IsNullOrWhiteSpace(newUser.Gender)
-            || string.IsNullOrWhiteSpace(newUser.Email)
-            || string.IsNullOrWhiteSpace(newUser.PhoneNumber)
-            || string.IsNullOrWhiteSpace(newUser.Password)
-            || string.IsNullOrWhiteSpace(newUser.UserName)
-            || string.IsNullOrWhiteSpace(newUser.JobPosition)
-            || string.IsNullOrWhiteSpace(newUser.Currency)
-            || string.IsNullOrWhiteSpace(newUser.Address))
+            if (string.IsNullOrWhiteSpace(newUser.FullName) ||
+                string.IsNullOrWhiteSpace(newUser.Gender) ||
+                string.IsNullOrWhiteSpace(newUser.Email) ||
+                string.IsNullOrWhiteSpace(newUser.UserName) ||
+                string.IsNullOrWhiteSpace(newUser.Password) ||
+                string.IsNullOrWhiteSpace(newUser.PhoneNumber) ||
+                string.IsNullOrWhiteSpace(newUser.Address) ||
+                string.IsNullOrWhiteSpace(newUser.JobPosition) ||
+                string.IsNullOrWhiteSpace(newUser.Currency))
             {
-                throw new Exception("Emply Space found, please insert data in all feild");
+                throw new Exception("All fields are required!");
             }
 
             var existingUsers = await userService.GetAllUsersAsync();
-
-            if(existingUsers != null)
+            if (existingUsers != null && existingUsers.Any(u => u.UserName == newUser.UserName))
             {
-                var sameUserId = existingUsers.FirstOrDefault(u => u.UserName == newUser.UserName);
-                if (sameUserId != null)
-                {
-                    throw new Exception("User with this user name already exist, select a diffrent user name");
-                }
-
+                throw new Exception("Username already exists. Please choose a different one.");
             }
+
             await userService.SaveUserAsync(newUser);
-            //Redirecting to the dashboard page
             navigationManager.NavigateTo("/");
-            newUser = new User();
-            errorMessage = null;
-
-
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            errorMessage=e.Message;
+            errorMessage = ex.Message;
         }
     }
 }

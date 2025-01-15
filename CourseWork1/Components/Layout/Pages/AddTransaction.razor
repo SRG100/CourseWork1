@@ -6,92 +6,109 @@
 @inject AuthenticationService authenticateUser
 
 
-<h3>addTransaction</h3>
-<div>
-    <form>
-        
-        <div>
-            <label>Transaction Name:</label>
-            <input type="text" placeholder="" @bind="newTransaction.TransactionName" />
-            
-        </div>
-        <div>
-            <label>Transaction Type:</label>
-            <select @bind="newTransaction.TransactionType">
-                <option value=""></option>
-                <option value="Income">Income</option>
-                <option value="Expense">Expense</option>
-                <option value="Debt">Debt</option>
-            </select>
-        </div>
-        <div>
-            <label>Transaction Amount:</label>
-            <input type="number" placeholder="Amount" @bind="newTransaction.Amount" />
-        </div>
-        <div>
-            <label>Transaction Date:</label>
-            <input type="date" placeholder="Transaction Date" @bind="newTransaction.TransactionDate" />
-        </div>
-        <div>
-            <label>Select Tag:</label>
-            <select @bind="newTransaction.Tags">
-                <option value=""></option>
-                @foreach (var Tag in existingTags)
-                {
-                    <option value="@Tag.TransactionTag">@Tag.TransactionTag</option>
-                }
-                
-            </select>
+<div class="container">
+    <div class="signup-content">
+        <form id="transaction-form" class="signup-form">
+            <h3 class="form-title">Add Transaction</h3>
 
-        </div>
-
-         
-        @if (newTransaction.Tags == null)
-        {
-            <button type="button" @onclick="AddCustomTagOption">Add Custom Tag :)</button> 
-            <br />
-        }
-        
-
-
-        @if (addnewTag)
-        {
-            <div>
-                <input type="text" placeholder="Add Tag" @bind="newTransaction.Tags" />
-                <button type="button" @onclick="AddCustomTag">Add Tag</button>
+            <div class="form-group">
+                <label for="transaction-name">Transaction Name:</label>
+                <input type="text" class="form-input" id="transaction-name" placeholder="" @bind="newTransaction.TransactionName" />
 
             </div>
-        }
 
-        @if (newTransaction.TransactionType == "Debt")
-        {
-            
-            <div>
-                <input type="text" placeholder="Debt Source" @bind="newTransaction.DebtSource" />
+            <div class="form-group">
+                <label for="transaction-type">Transaction Type:</label>
+                <select class="form-input" id="transaction-type" @bind="newTransaction.TransactionType">
+                    <option value=""></option>
+                    <option value="Income">Income</option>
+                    <option value="Expense">Expense</option>
+                    <option value="Debt">Debt</option>
+                </select>
             </div>
-            <div>
-                <input type="date" placeholder="Debt Due Date" @bind="newTransaction.DebtDueDate" />
+
+            <div class="form-group">
+                <label for="transaction-amount">Transaction Amount:</label>
+                <input type="number" class="form-input" id="transaction-amount" placeholder="Amount" @bind="newTransaction.Amount" />
             </div>
-        }
-        <button type="button" @onclick="AddNote">Add Custom Note :)</button>
 
-        @if (addNote)
-        {
-            <div>
-                <input type="text" placeholder="Add Tag" @bind="newTransaction.Note" />
+            <div class="form-group">
+                <label for="transaction-date">Transaction Date:</label>
+                <input type="date" class="form-input" id="transaction-date" placeholder="Transaction Date" @bind="newTransaction.TransactionDate" />
             </div>
-        }
-        
+            @if (!addnewTag)
+            {
+            <div class="form-group">
+                <label for="transaction-tags">Select Tag:</label>
+                <select class="form-input" id="transaction-tags" @bind="newTransaction.Tags">
+                    <option value=""></option>
+                    @foreach (var Tag in existingTags)
+                    {
+                        <option value="@Tag.TransactionTag">@Tag.TransactionTag</option>
+                    }
+                </select>
+            </div>
+            }
+
+            @if (newTransaction.Tags == null && clicked==true)
+            {
+                <div class="form-group">
+                    <button type="button" class="btn btn-outline-primary" @onclick="AddCustomTagOption">Add Custom Tag :)</button>
+                </div>
+            }
+
+            @if (addnewTag)
+            {
+
+                <div class="form-group">
+                    <input type="text" class="form-input" placeholder="Add Tag" @bind="newTransaction.Tags" />
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-outline-primary" @onclick="AddCustomTag">Add Tag</button>
+                </div>
+            }
+
+            @if (newTransaction.TransactionType == "Debt")
+            {
+                <div class="form-group">
+                    <label for="debt-source">Debt Source:</label>
+                    <input type="text" class="form-input" id="debt-source" placeholder="Debt Source" @bind="newTransaction.DebtSource" />
+                </div>
+
+                <div class="form-group">
+                    <label for="debt-due-date">Debt Due Date:</label>
+                    <input type="date" class="form-input" id="debt-due-date" placeholder="Debt Due Date" @bind="newTransaction.DebtDueDate" />
+                </div>
+            }
 
 
-        <button type="button" @onclick="AddNewTransaction">Add</button>
-        @if (errorMessage != null)
-        {
-            <p class="error-message">@errorMessage</p>
-        }
-    </form>
+
+            <div class="form-group">
+                <input type="text" class="form-input" placeholder="Add Note(Optional)" @bind="newTransaction.Note" />
+            </div>
+
+
+            <div class="form-group">
+                <button type="button" class="form-submit" @onclick="AddNewTransaction">Add Transaction</button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div id="popup1" class="overlay">
+                    <div class="popup">
+                        <h2>Error Message</h2>
+                        <a class="close" href="#">&times;</a>
+                        <div class="content">
+                            @errorMessage
+                        </div>
+                    </div>
+                </div>
+            }
+        </form>
+    </div>
 </div>
-  
+
+
 
 
 @code {
@@ -99,6 +116,7 @@
     private string errorMessage;
     private Boolean addnewTag = false;
     private Boolean addNote = false;
+    private Boolean clicked = true;
     private List<Tags> existingTags = new List<Tags>();
     private Tags newTag = new Tags();
     private decimal totalBalance;
@@ -116,6 +134,7 @@
     private async Task AddCustomTagOption()
     {
         addnewTag = true;
+        clicked = false;
 
     }
 
@@ -171,7 +190,7 @@
             totalBalance = totalIncome - totalExpense;
             if (newTransaction.TransactionType == "Expense")
             {
-                if (totalBalance !> newTransaction.Amount)
+                if (totalBalance < newTransaction.Amount)
                 {
                     throw new Exception("Insufficient Balance");
                 }
