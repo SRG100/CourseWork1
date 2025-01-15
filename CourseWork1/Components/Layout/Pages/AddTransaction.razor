@@ -6,6 +6,19 @@
 @inject AuthenticationService authenticateUser
 
 
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="error-parent">
+        <div class="error-overlay">
+            <dialog class="error-dialog" open>
+                <h2>Error</h2>
+                <p>@errorMessage</p>
+                <button class="close-btn" @onclick="CloseDialog">❌</button>
+            </dialog>
+        </div>
+    </div>
+
+}
 <div class="container">
     <div class="signup-content">
         <form id="transaction-form" class="signup-form">
@@ -29,7 +42,7 @@
 
             <div class="form-group">
                 <label for="transaction-amount">Transaction Amount:</label>
-                <input type="number" class="form-input" id="transaction-amount" placeholder="Amount" @bind="newTransaction.Amount" />
+                <input type="number" class="form-input" id="transaction-amount" placeholder="Amount" min="0" @bind="newTransaction.Amount" />
             </div>
 
             <div class="form-group">
@@ -38,16 +51,16 @@
             </div>
             @if (!addnewTag)
             {
-            <div class="form-group">
-                <label for="transaction-tags">Select Tag:</label>
-                <select class="form-input" id="transaction-tags" @bind="newTransaction.Tags">
-                    <option value=""></option>
-                    @foreach (var Tag in existingTags)
-                    {
-                        <option value="@Tag.TransactionTag">@Tag.TransactionTag</option>
-                    }
-                </select>
-            </div>
+                <div class="form-group">
+                    <label for="transaction-tags">Select Tag:</label>
+                    <select class="form-input" id="transaction-tags" @bind="newTransaction.Tags">
+                        <option value=""></option>
+                        @foreach (var Tag in existingTags)
+                        {
+                            <option value="@Tag.TransactionTag">@Tag.TransactionTag</option>
+                        }
+                    </select>
+                </div>
             }
 
             @if (newTransaction.Tags == null && clicked==true)
@@ -92,18 +105,6 @@
                 <button type="button" class="form-submit" @onclick="AddNewTransaction">Add Transaction</button>
             </div>
 
-            @if (!string.IsNullOrEmpty(errorMessage))
-            {
-                <div id="popup1" class="overlay">
-                    <div class="popup">
-                        <h2>Error Message</h2>
-                        <a class="close" href="#">&times;</a>
-                        <div class="content">
-                            @errorMessage
-                        </div>
-                    </div>
-                </div>
-            }
         </form>
     </div>
 </div>
@@ -122,8 +123,15 @@
     private decimal totalBalance;
     private decimal totalIncome;
     private decimal totalExpense;
+    private decimal totalDebt;
+    private decimal paidDebt;
+    private decimal pendingDebt;
 
 
+    private void CloseDialog()
+    {
+        errorMessage = null;
+    }
     protected override async Task OnInitializedAsync()
     {
         existingTags = await tagService.GetTagsAsync();
@@ -178,7 +186,7 @@
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(newTransaction.Tags))
+            if (string.IsNullOrWhiteSpace(newTransaction.Tags) || string.IsNullOrWhiteSpace(newTransaction.TransactionName) || string.IsNullOrWhiteSpace(newTransaction.TransactionType))
             {
                 throw new Exception("Emply Space found, please insert data in all feild");
             }
@@ -188,12 +196,28 @@
             totalIncome = existingTransactionsOfUser.Where(t => t.TransactionType == "Income").Sum(t => t.Amount);
             totalExpense = existingTransactionsOfUser.Where(t => t.TransactionType == "Expense").Sum(t => t.Amount);
             totalBalance = totalIncome - totalExpense;
+            totalDebt = existingTransactionsOfUser.Where(t => t.TransactionType == "Debt").Sum(t => t.Amount);
+            paidDebt = existingTransactionsOfUser.Where(t => t.TransactionType == "PaidDebt").Sum(t => t.Amount);
+            pendingDebt = totalDebt - paidDebt;
+
+
             if (newTransaction.TransactionType == "Expense")
             {
                 if (totalBalance < newTransaction.Amount)
                 {
                     throw new Exception("Insufficient Balance");
                 }
+            }
+            if (newTransaction.TransactionType == "Debt")
+            {
+                if (pendingDebt >0)
+                {
+                    throw new Exception("Please Pay your previous debt first");
+                }
+            }
+            if (newTransaction.Amount == 0 || newTransaction.Amount < 0)
+            {
+                throw new Exception("Please insert amount greater than zero");
             }
 
             await transactionsService.AddTransactionsAsync(newTransaction);

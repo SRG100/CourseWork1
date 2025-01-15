@@ -5,8 +5,23 @@
 @inject AuthenticationService authenticateUser
 
 @page "/viewtransactions"
+<style>
+    .form-select {
+    }
+</style>
 
+@if (!string.IsNullOrEmpty(errorMessage))
+{
 
+    <div class="error-overlay">
+        <dialog class="error-dialog" open>
+            <h2>Error Occurred</h2>
+            <p>@errorMessage</p>
+            <button class="close-btn" @onclick="CloseDialog">❌</button>
+        </dialog>
+    </div>
+
+}
 
 <div class="top">
     <div class="left">
@@ -18,15 +33,8 @@
         <button type="button" @onclick="ClearField"> <i class="fa-solid fa-x"></i> </button>
 
     </div>
-
-
-
 </div>
 <div class="transaction-list">
-    @if (errorMessage != null)
-    {
-        <h1>@errorMessage</h1>
-    }
 
     @if (fromtodate == true)
     {
@@ -35,7 +43,7 @@
             <input type="date" placeholder="Transaction Date" @bind="From" />
             <label>To:</label>
             <input type="date" placeholder="Transaction Date" @bind="To" />
-            <button type="button" @onclick="IntervalDate"> Get Transactions </button>
+            <button type="button" class="btn btn-primary" @onclick="IntervalDate"> <i class='bx bx-filter-alt'></i> </button>
         </div>
 
     }
@@ -43,15 +51,16 @@
     {
         <div class="popup">
             <label>Transaction Type:</label>
-            <select @bind="selectedType">
-                <option value=""></option>
+
+            <select class="form-select" aria-label="Default select example" @bind="selectedType">
+                <option selected>Select the transaction type</option>
                 <option value="Income">Income</option>
                 <option value="Expense">Expense</option>
                 <option value="Debt">Debt</option>
 
 
             </select>
-            <button type="button" @onclick="SelectType"> Filter Type </button>
+            <button type="button" class="btn btn-primary" @onclick="SelectType"> <i class='bx bx-filter-alt'></i></button>
         </div>
 
     }
@@ -59,15 +68,17 @@
     {
         <div class="popup">
             <label>Transaction Tags:</label>
-            <select @bind="selectedTag">
-                <option value=""></option>
+
+
+            <select class="form-select" aria-label="Default select example" @bind="selectedTag">
+                <option selected>Select Tag</option>
                 @foreach (var Tag in existingTags)
                 {
                     <option value="@Tag.TransactionTag">@Tag.TransactionTag</option>
                 }
 
             </select>
-            <button type="button" @onclick="SelectTag"> Filter Tag </button>
+            <button type="button" @onclick="SelectTag" class="btn btn-primary"> <i class='bx bx-filter-alt'></i> </button>
         </div>
 
     }
@@ -79,15 +90,15 @@
     else
     {
         <table class="table">
-            <thead>
+            <thead class="thead-dark">
                 <tr>
                     <th scope="col"> Transaction Name </th>
 
-                    <th scope="col">  <button type="button" @onclick="ViewSelectType"> TransactionType </button></th>
+                    <th scope="col">  <button type="button" @onclick="ViewSelectType"> Transaction Type <i class='bx bx-filter-alt'></i> </button></th>
 
-                    <th scope="col">  <button type="button" @onclick="DateShorting" @ondblclick="FromToDates"> TransactionDate </button></th>
+                    <th scope="col">  <button type="button" @onclick="DateShorting" @ondblclick="FromToDates"> Transaction Date <i class='bx bx-filter-alt'></i></button></th>
 
-                    <th scope="col">  <button type="button" @onclick="ViewSelectTag "> Tags </button></th>
+                    <th scope="col">  <button type="button" @onclick="ViewSelectTag "> Tags <i class='bx bx-filter-alt'></i> </button></th>
 
                     <th scope="col"> Note </th>
                     <th scope="col">  Amount </th>
@@ -134,218 +145,237 @@
             </tbody>
         </table>
 
-}
+    }
 
-    </div>
-        @code {
+</div>
+@code {
     private List<Transaction> existingTransaction = new List<Transaction>();
-        private string errorMessage; //for display of error message
-        private string searchedTitle; //for searched title in the search bar
-        private string selectedType; //for the selected type for filtering
-        private string selectedTag; //for the selected tag for filtering
-        int count = 0; //count is used for ascendhing and descending data
-        private DateTime From; // for from date range
-        private DateTime To; // for to date range
-        private List<Transaction> searchResult; // getting the search result
-        private Boolean fromtodate = false;
-        private Boolean clickSelectType = false;
-        private Boolean clickSelectTag = false;
-        private List<Tags> existingTags = new List<Tags>(); // for getting the list of tag
+    private string errorMessage; //for display of error message
+    private string searchedTitle; //for searched title in the search bar
+    private string selectedType; //for the selected type for filtering
+    private string selectedTag; //for the selected tag for filtering
+    int count = 0; //count is used for ascendhing and descending data
+    private DateTime From; // for from date range
+    private DateTime To; // for to date range
+    private List<Transaction> searchResult; // getting the search result
+    private Boolean fromtodate = false;
+    private Boolean clickSelectType = false;
+    private Boolean clickSelectTag = false;
+    private List<Tags> existingTags = new List<Tags>(); // for getting the list of tag
 
+    private void CloseDialog()
+    {
+        try
+        {
+            errorMessage = null;
+        }
+        catch (Exception e)
+        {
+            errorMessage = e.Message;
+        }
+    }
 
-
-        //the method that runs while this razor is initialized
-        protected override async Task OnInitializedAsync()
+    //the method that runs while this razor is initialized
+    protected override async Task OnInitializedAsync()
+    {
+        try
         {
             errorMessage = null;
             await ViewTransactions();
             existingTags = await tagService.GetTagsAsync();
         }
-
-        //to get the search result after clicking the search button
-        private async Task SearchedTitle()
+        catch (Exception e)
         {
-            try
-            {
-                //if the search button has been clicked and no value is inserted
-                if (searchedTitle == null)
-                {
-                    throw new Exception("No search item ");
-                }
-
-                errorMessage = null;
-                int currentUserID = authenticateUser.GetCurrentUser().UserId;
-                existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
-                searchResult = existingTransaction.FindAll(et => et.TransactionName.ToLower().Contains(searchedTitle.ToLower()));
-                existingTransaction = searchResult;
-            }
-            catch (Exception e)
-            {
-                errorMessage = e.Message;
-            }
+            errorMessage = e.Message;
         }
-        //to clear the search field
-        private async Task ClearField()
-        {
+        
+    }
 
-            try
-            {
-                errorMessage = null;
-                searchedTitle = null;
-                int currentUserID = authenticateUser.GetCurrentUser().UserId;
-                existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
-            }
-            catch (Exception e)
-            {
-                errorMessage = e.Message;
-            }
-        }
-
-        //to open select the type and filter
-        private async Task ViewSelectType()
+    //to get the search result after clicking the search button
+    private async Task SearchedTitle()
+    {
+        try
         {
-            try
+            //if the search button has been clicked and no value is inserted
+            if (searchedTitle == null)
             {
-                errorMessage = null;
-                clickSelectType = true;
-                clickSelectTag = false;
-                fromtodate = false;
-            }
-            catch (Exception e)
-            {
-                errorMessage = e.Message;
-            }
-        }
-        //to show the select tag filter
-        private async Task ViewSelectTag()
-        {
-            try
-            {
-                errorMessage = null;
-                clickSelectTag = true;
-                clickSelectType = false;
-                fromtodate = false;
-            }
-            catch (Exception e)
-            {
-                errorMessage = e.Message;
+                throw new Exception("No search item ");
             }
 
+            errorMessage = null;
+            int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
+            searchResult = existingTransaction.FindAll(et => et.TransactionName.ToLower().Contains(searchedTitle.ToLower()));
+            existingTransaction = searchResult;
+
         }
-        //To filter the type of the transaction
-        private async Task SelectType()
+        catch (Exception e)
         {
-            try
-            {
-                if (selectedType == null)
-                {
-                    throw new Exception("No type selected");
-                }
-                errorMessage = null;
-                int currentUserID = authenticateUser.GetCurrentUser().UserId;
-                existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
-                searchResult = existingTransaction.FindAll(et => et.TransactionType.ToLower() == selectedType.ToLower());
-                existingTransaction = searchResult;
-            }
-            catch (Exception e)
-            {
-                errorMessage = e.Message;
-            }
+            errorMessage = e.Message;
         }
-        //To select the details with
-        private async Task SelectTag()
+    }
+    //to clear the search field
+    private async Task ClearField()
+    {
+
+        try
         {
-            try
-            {
-                if (selectedTag == null)
-                {
-                    throw new Exception("No tag selected");
-                }
-                errorMessage = null;
-                int currentUserID = authenticateUser.GetCurrentUser().UserId;
-                existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
-                searchResult = existingTransaction.FindAll(et => et.Tags.ToLower() == selectedTag.ToLower());
-                existingTransaction = searchResult;
-            }
-            catch (Exception e)
-            {
-                errorMessage = e.Message;
-            }
+            errorMessage = null;
+            searchedTitle = null;
+            int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
+        }
+        catch (Exception e)
+        {
+            errorMessage = e.Message;
+        }
+    }
+
+    //to open select the type and filter
+    private async Task ViewSelectType()
+    {
+        try
+        {
+            errorMessage = null;
+            clickSelectType = true;
+            clickSelectTag = false;
+            fromtodate = false;
+        }
+        catch (Exception e)
+        {
+            errorMessage = e.Message;
+        }
+    }
+    //to show the select tag filter
+    private async Task ViewSelectTag()
+    {
+        try
+        {
+            errorMessage = null;
+            clickSelectTag = true;
+            clickSelectType = false;
+            fromtodate = false;
+        }
+        catch (Exception e)
+        {
+            errorMessage = e.Message;
         }
 
-        //to sort data into ascending and descending
-        private async Task DateShorting()
+    }
+    //To filter the type of the transaction
+    private async Task SelectType()
+    {
+        try
         {
-            try
+            if (selectedType == null)
             {
-                errorMessage = null;
-                int currentUserID = authenticateUser.GetCurrentUser().UserId;
-                existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
+                throw new Exception("No type selected");
+            }
+            errorMessage = null;
+            int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
+            searchResult = existingTransaction.FindAll(et => et.TransactionType.ToLower() == selectedType.ToLower());
+            existingTransaction = searchResult;
+        }
+        catch (Exception e)
+        {
+            errorMessage = e.Message;
+        }
+    }
+    //To select the details with
+    private async Task SelectTag()
+    {
+        try
+        {
+            if (selectedTag == null)
+            {
+                throw new Exception("No tag selected");
+            }
+            errorMessage = null;
+            int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
+            searchResult = existingTransaction.FindAll(et => et.Tags.ToLower() == selectedTag.ToLower());
+            existingTransaction = searchResult;
+        }
+        catch (Exception e)
+        {
+            errorMessage = e.Message;
+        }
+    }
 
-                //to determine if ascending or decending is required
-                if (count % 2 == 0 || count == 0)
-                {
-                    searchResult = existingTransaction.OrderBy(et => et.TransactionDate).ToList();
-                }
-                //to filter out descending
-                else
-                {
-                    searchResult = existingTransaction.OrderByDescending(et => et.TransactionDate).ToList();
-                }
-                count += 1;
-                existingTransaction = searchResult;
-            }
-            catch (Exception e)//to handle exception
-            {
-                errorMessage = e.Message;
-            }
-        }
+    //to sort data into ascending and descending
+    private async Task DateShorting()
+    {
+        try
+        {
+            errorMessage = null;
+            int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
 
-        //To get the from to panel
-        private async Task FromToDates()
-        {
-            try
+            //to determine if ascending or decending is required
+            if (count % 2 == 0 || count == 0)
             {
-                From = DateTime.Now;
-                To = DateTime.Now;
-                fromtodate = true;
-                clickSelectType = false;
-                clickSelectTag = false;
+                searchResult = existingTransaction.OrderBy(et => et.TransactionDate).ToList();
             }
-            catch (Exception e)
+            //to filter out descending
+            else
             {
-                errorMessage = e.Message;
+                searchResult = existingTransaction.OrderByDescending(et => et.TransactionDate).ToList();
             }
+            count += 1;
+            existingTransaction = searchResult;
         }
-        //to get the transactions from to and from interval dates
-        private async Task IntervalDate()
+        catch (Exception e)//to handle exception
         {
-            try
-            {
-                searchedTitle = null;
-                int currentUserID = authenticateUser.GetCurrentUser().UserId;
-                existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
-                searchResult = existingTransaction.FindAll(et => et.TransactionDate >= From && et.TransactionDate <= To);
-                // searchResult = existingTransaction.FindAll(et => et.TransactionDate >= From && et.TransactionDate<= To);
-                existingTransaction = searchResult;
+            errorMessage = e.Message;
+        }
+    }
 
-            }
-            catch (Exception e) //
-            {
-                errorMessage = e.Message;
-            }
-        }
-        //View overall transactions
-        private async Task ViewTransactions()
+    //To get the from to panel
+    private async Task FromToDates()
+    {
+        try
         {
-            try
-            {
-                int currentUserID = authenticateUser.GetCurrentUser().UserId;
-                existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
-            }
-            catch (Exception e)
-            {
-                errorMessage = e.Message;
-            }
+            From = DateTime.Now;
+            To = DateTime.Now;
+            fromtodate = true;
+            clickSelectType = false;
+            clickSelectTag = false;
         }
+        catch (Exception e)
+        {
+            errorMessage = e.Message;
+        }
+    }
+    //to get the transactions from to and from interval dates
+    private async Task IntervalDate()
+    {
+        try
+        {
+            searchedTitle = null;
+            int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
+            searchResult = existingTransaction.FindAll(et => et.TransactionDate >= From && et.TransactionDate <= To);
+            // searchResult = existingTransaction.FindAll(et => et.TransactionDate >= From && et.TransactionDate<= To);
+            existingTransaction = searchResult;
+
+        }
+        catch (Exception e) //
+        {
+            errorMessage = e.Message;
+        }
+    }
+    //View overall transactions
+    private async Task ViewTransactions()
+    {
+        try
+        {
+            int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
+        }
+        catch (Exception e)
+        {
+            errorMessage = e.Message;
+        }
+    }
 }

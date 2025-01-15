@@ -1,7 +1,106 @@
 ﻿@page "/userDetails"
+@inherits LayoutComponentBase
+@using CourseWork1.Services
+@inject IUserService userServices
+@inject AuthenticationService authenticateUser
 
-<h3>UserDetails</h3>
+@using CourseWork1.Models
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+
+    <div class="error-overlay">
+        <dialog class="error-dialog" open>
+            <h2>Error Occurred</h2>
+            <p>@errorMessage</p>
+            <button class="close-btn" @onclick="CloseDialog">❌</button>
+        </dialog>
+    </div>
+
+}
+
+
+<div class="d-flex justify-content-center align-items-center vh-100">
+    <div class="col-md-5 border-right center-container">
+        <div class="p-3 py-5">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="text-right">User Details</h4>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-12"><label class="labels">Full Name</label><input type="text" class="form-control" value="@Fullname" readonly></div>
+                <div class="col-md-12"><label class="labels">UserName</label><input type="text" class="form-control" value="@UserName" readonly></div>
+            </div>
+
+            <div class="row mt-2">
+                <div class="col-md-6"><label class="labels">Gender</label><input type="text" class="form-control" value="@Gender" readonly></div>
+                <div class="col-md-6"><label class="labels">Email</label><input type="text" class="form-control" value="@Email" readonly></div>
+                <div class="col-md-6"><label class="labels">Phone Number</label><input type="text" class="form-control" value="@PhoneNumber" readonly></div>
+                <div class="col-md-6"><label class="labels">Address</label><input type="text" class="form-control" value="@Address" readonly></div>
+                <div class="col-md-6"><label class="labels">Currency</label><input type="text" class="form-control" value="@Currency" readonly></div>
+                <div class="col-md-6"><label class="labels">Job Position</label><input type="text" class="form-control" value="@JobPosition" readonly></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 @code {
+    private string Fullname;
+    private string errorMessage;
+    private string UserName;
+    private string Gender;
+    private string Email;
+    private string PhoneNumber;
+    private string Address;
+    private string JobPosition;
+    private string Currency;
+    private List<User> TotalUsers = new List<User>();
 
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            await GetUserInfo(currentUserID);
+        }
+        catch (Exception e)
+        {
+            errorMessage = e.Message;
+        }
+        
+    }
+
+    private void CloseDialog()
+    {
+        try
+        {
+            errorMessage = null;
+        }
+        catch(Exception e)
+        {
+            errorMessage = e.Message;
+        }
+    }
+
+    public async Task GetUserInfo(int userId)
+    {
+        try
+        {
+            TotalUsers = await userServices.GetAllUsersAsync();
+            var currentUser = TotalUsers.FirstOrDefault(t => t.UserId == userId);
+            Fullname = currentUser.FullName;
+            UserName = currentUser.UserName;
+            Gender = currentUser.Gender;
+            Email = currentUser.Email;
+            PhoneNumber = currentUser.PhoneNumber;
+            Address = currentUser.Address;
+            JobPosition = currentUser.JobPosition;
+            Currency = currentUser.Currency;
+        }
+        catch(Exception e)
+        {
+            errorMessage = e.Message;
+        }
+    }
 }

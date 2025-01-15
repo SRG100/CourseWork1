@@ -58,6 +58,15 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Content Remove="Components\Layout\Pages\ErrorMessage.razor" />
+      <Content Remove="Components\Layout\Pages\Home.razor" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Components\Layout\Pages\ErrorMessage.razor.css" />
+    </ItemGroup>
+
+    <ItemGroup>
       <None Include="wwwroot\css\app.css" />
     </ItemGroup>
 

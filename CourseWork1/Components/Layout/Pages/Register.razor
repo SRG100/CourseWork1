@@ -55,10 +55,7 @@
 
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" OnClick="@RegisterUser">Register</MudButton>
                 </MudForm>
-                @if (!string.IsNullOrEmpty(errorMessage))
-                {
-                    <MudText Typo="Typo.body2" Color="Color.Error" Class="mt-2">@errorMessage</MudText>
-                }
+                
                 <MudText Typo="Typo.body1" Class="mt-4">
                     Already have an account? <MudLink Href="/" Color="Color.Primary">Login</MudLink>
                 </MudText>
@@ -75,7 +72,10 @@
     private bool isValid;
     private string errorMessage;
     private User newUser = new User();
-
+    private void CloseDialog()
+    {
+        errorMessage = null;
+    }
     private async Task RegisterUser()
     {
         await registerForm.Validate();

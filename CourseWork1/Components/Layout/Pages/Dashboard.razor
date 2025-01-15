@@ -20,7 +20,17 @@
 </style>
 
 <h3>Dashboard</h3>
+@if (!string.IsNullOrEmpty(errormessage))
+{
+            <div class="error-overlay">
+            <dialog class="error-dialog" open>
+                <h2>Error</h2>
+                    <p>@errormessage</p>
+                <button class="close-btn" @onclick="CloseDialog">❌</button>
+            </dialog>
+        </div>
 
+}
 
 
 <div class=" top">
@@ -76,20 +86,7 @@
     </div>
 </div>
 
-
-@if (errormessage != null)
-{
-    <div id="popup1" class="overlay">
-        <div class="popup">
-            <h2>Error Message</h2>
-            @* <a class="close" href="#">&times;</a> *@
-            <div class="content">
-                @errormessage
-            </div>
-        </div>
-    </div>
-
-}
+The transactions of the month: @expenseMonth are:
 
 <table class="table">
     <thead>
@@ -194,12 +191,15 @@
     {
         expenseMonth = Month.ToString("MMMM");
         expenseYear = Month.ToString("yyyy");
-        errormessage = expenseMonth;
+        
         int currentUserID = authenticateUser.GetCurrentUser().UserId;
         await CalculateTotals(currentUserID);
 
     }
-
+    private void CloseDialog()
+    {
+        errormessage = null;
+    }
     //to calculate the total transactions values
     public async Task CalculateTotals(int userId)
     {
