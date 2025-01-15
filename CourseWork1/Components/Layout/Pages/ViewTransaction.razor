@@ -5,11 +5,8 @@
 @inject AuthenticationService authenticateUser
 
 @page "/viewtransactions"
-<style>
-    .form-select {
-    }
-</style>
 
+@* the error message popup that occurs when an error message is shown *@
 @if (!string.IsNullOrEmpty(errorMessage))
 {
 
@@ -23,6 +20,8 @@
 
 }
 
+
+@* the section with the search bar *@
 <div class="top">
     <div class="left">
         <h4>Transaction History</h4>
@@ -34,8 +33,11 @@
 
     </div>
 </div>
+
+@* the table with the transaction data *@
 <div class="transaction-list">
 
+    @* if the date is clicked twice then this is shown for filtering the dates in range *@
     @if (fromtodate == true)
     {
         <div class="popup">
@@ -47,6 +49,7 @@
         </div>
 
     }
+    @* to filter out the transaction based on the type of transaction *@
     @if (clickSelectType == true)
     {
         <div class="popup">
@@ -64,6 +67,7 @@
         </div>
 
     }
+    @* to filter out the transaction list based on the tag of the transaction *@
     @if (clickSelectTag == true)
     {
         <div class="popup">
@@ -72,6 +76,7 @@
 
             <select class="form-select" aria-label="Default select example" @bind="selectedTag">
                 <option selected>Select Tag</option>
+                @* getting all the values of tag in select list *@
                 @foreach (var Tag in existingTags)
                 {
                     <option value="@Tag.TransactionTag">@Tag.TransactionTag</option>
@@ -82,13 +87,15 @@
         </div>
 
     }
-    @if (existingTransaction == null)
-    {
-        <h1>NO TABLES</h1>
 
+    @* if there are no values in the table *@
+    @if (string.IsNullOrWhiteSpace(existingTransaction.ToString())){
+        <h1>NO TABLES</h1>
     }
+    
     else
     {
+        //the table head
         <table class="table">
             <thead class="thead-dark">
                 <tr>
@@ -106,10 +113,17 @@
                     <th scope="col"> DebtSource</th>
                 </tr>
             </thead>
-            <tbody>
 
+            <tbody>
+                
+                @* getting all the values of the trancation in tabular format using for each loop *@
                 @foreach (var transaction in existingTransaction)
                 {
+                    //skips the transaction that have the type "Paydebt"
+                    if (transaction.TransactionType == "PaidDebt")
+                    {
+                        continue; 
+                    }
                     <tr scope="row">
                         <td> @transaction.TransactionName </td>
                         <td> @transaction.TransactionType </td>
@@ -129,7 +143,8 @@
                         }
 
                         <td> <strong> @transaction.Amount.ToString()</strong></td>
-                        @if (transaction.TransactionType == "Income" || transaction.TransactionType == "Expense" || transaction.TransactionType == "PaidDebt")
+
+                        @if (transaction.TransactionType == "Income" || transaction.TransactionType == "Expense" )
                         {
                             <td>--NA--</td>
                             <td>--NA--</td>
@@ -161,8 +176,15 @@
     private Boolean fromtodate = false;
     private Boolean clickSelectType = false;
     private Boolean clickSelectTag = false;
+    private Boolean existingFilter = false;
+    private Boolean existingSearch = false;
+
+
+
     private List<Tags> existingTags = new List<Tags>(); // for getting the list of tag
 
+
+    //for closing the error pop up
     private void CloseDialog()
     {
         try
@@ -180,6 +202,7 @@
     {
         try
         {
+            existingFilter = false;
             errorMessage = null;
             await ViewTransactions();
             existingTags = await tagService.GetTagsAsync();
@@ -188,7 +211,7 @@
         {
             errorMessage = e.Message;
         }
-        
+
     }
 
     //to get the search result after clicking the search button
@@ -202,11 +225,21 @@
                 throw new Exception("No search item ");
             }
 
-            errorMessage = null;
-            int currentUserID = authenticateUser.GetCurrentUser().UserId;
-            existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
-            searchResult = existingTransaction.FindAll(et => et.TransactionName.ToLower().Contains(searchedTitle.ToLower()));
-            existingTransaction = searchResult;
+            if (existingFilter == false)
+            {
+                existingSearch = true;
+                errorMessage = null;
+                int currentUserID = authenticateUser.GetCurrentUser().UserId;
+                existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID); //getting all the transactions of the user
+                searchResult = existingTransaction.FindAll(et => et.TransactionName.ToLower().Contains(searchedTitle.ToLower()));
+                existingTransaction = searchResult;
+                existingSearch = true;
+            }
+            else
+            {
+                searchResult = existingTransaction.FindAll(et => et.TransactionName.ToLower().Contains(searchedTitle.ToLower()));
+                existingTransaction = searchResult;
+            }
 
         }
         catch (Exception e)
@@ -220,8 +253,13 @@
 
         try
         {
+            existingSearch = false;
+            existingFilter = false;
             errorMessage = null;
             searchedTitle = null;
+            clickSelectType = false;
+            clickSelectTag = false;
+            fromtodate = false;
             int currentUserID = authenticateUser.GetCurrentUser().UserId;
             existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
         }
@@ -236,6 +274,7 @@
     {
         try
         {
+
             errorMessage = null;
             clickSelectType = true;
             clickSelectTag = false;
@@ -271,11 +310,21 @@
             {
                 throw new Exception("No type selected");
             }
-            errorMessage = null;
-            int currentUserID = authenticateUser.GetCurrentUser().UserId;
-            existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
-            searchResult = existingTransaction.FindAll(et => et.TransactionType.ToLower() == selectedType.ToLower());
-            existingTransaction = searchResult;
+            if (existingSearch == false)
+            {
+                existingFilter = true;
+                errorMessage = null;
+                int currentUserID = authenticateUser.GetCurrentUser().UserId;
+                existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
+                searchResult = existingTransaction.FindAll(et => et.TransactionType.ToLower() == selectedType.ToLower());
+                existingTransaction = searchResult;
+            }
+            else
+            {
+                searchResult = existingTransaction.FindAll(et => et.TransactionType.ToLower() == selectedType.ToLower());
+                existingTransaction = searchResult;
+            }
+
         }
         catch (Exception e)
         {
@@ -287,15 +336,26 @@
     {
         try
         {
-            if (selectedTag == null)
+            if (existingSearch == false) //if a search result doesnt exist
             {
-                throw new Exception("No tag selected");
+
+                existingFilter = true;
+
+                if (selectedTag == null)
+                {
+                    throw new Exception("No tag selected");
+                }
+                errorMessage = null;
+                int currentUserID = authenticateUser.GetCurrentUser().UserId;
+                existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
+                searchResult = existingTransaction.FindAll(et => et.Tags.ToLower() == selectedTag.ToLower());
+                existingTransaction = searchResult;
             }
-            errorMessage = null;
-            int currentUserID = authenticateUser.GetCurrentUser().UserId;
-            existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
-            searchResult = existingTransaction.FindAll(et => et.Tags.ToLower() == selectedTag.ToLower());
-            existingTransaction = searchResult;
+            else //if a search result already exists
+            {
+                searchResult = existingTransaction.FindAll(et => et.Tags.ToLower() == selectedTag.ToLower());
+                existingTransaction = searchResult;
+            }
         }
         catch (Exception e)
         {
@@ -308,22 +368,46 @@
     {
         try
         {
-            errorMessage = null;
-            int currentUserID = authenticateUser.GetCurrentUser().UserId;
-            existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
+            if (existingSearch == false) //if a search result doesnt exist
+            {
+                existingFilter = true;
+                clickSelectType = false;
+                clickSelectTag = false;
+                errorMessage = null;
+                int currentUserID = authenticateUser.GetCurrentUser().UserId;
+                existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
 
-            //to determine if ascending or decending is required
-            if (count % 2 == 0 || count == 0)
-            {
-                searchResult = existingTransaction.OrderBy(et => et.TransactionDate).ToList();
+                //to determine if ascending or decending is required
+                if (count % 2 == 0 || count == 0)
+                {
+                    searchResult = existingTransaction.OrderBy(et => et.TransactionDate).ToList();
+                }
+                //to filter out descending
+                else
+                {
+                    searchResult = existingTransaction.OrderByDescending(et => et.TransactionDate).ToList();
+                }
+                count += 1;
+                existingTransaction = searchResult;
             }
-            //to filter out descending
-            else
+            else //if a search result  exist
             {
-                searchResult = existingTransaction.OrderByDescending(et => et.TransactionDate).ToList();
+                existingFilter = true;
+                clickSelectType = false;
+                clickSelectTag = false;
+                if (count % 2 == 0 || count == 0)
+                {
+                    searchResult = existingTransaction.OrderBy(et => et.TransactionDate).ToList();
+                }
+                //to filter out descending
+                else
+                {
+
+                    searchResult = existingTransaction.OrderByDescending(et => et.TransactionDate).ToList();
+                }
+                count += 1;
+                existingTransaction = searchResult;
             }
-            count += 1;
-            existingTransaction = searchResult;
         }
         catch (Exception e)//to handle exception
         {
@@ -352,13 +436,21 @@
     {
         try
         {
-            searchedTitle = null;
-            int currentUserID = authenticateUser.GetCurrentUser().UserId;
-            existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
-            searchResult = existingTransaction.FindAll(et => et.TransactionDate >= From && et.TransactionDate <= To);
-            // searchResult = existingTransaction.FindAll(et => et.TransactionDate >= From && et.TransactionDate<= To);
-            existingTransaction = searchResult;
-
+            if (existingSearch == false) //if a search result doesnt exist
+            {
+                existingFilter = true;
+                searchedTitle = null;
+                int currentUserID = authenticateUser.GetCurrentUser().UserId;
+                existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
+                searchResult = existingTransaction.FindAll(et => et.TransactionDate >= From && et.TransactionDate <= To);
+                existingTransaction = searchResult;
+            }
+            else
+            {
+                existingFilter = true;
+                searchResult = existingTransaction.FindAll(et => et.TransactionDate >= From && et.TransactionDate <= To);
+                existingTransaction = searchResult;
+            }
         }
         catch (Exception e) //
         {

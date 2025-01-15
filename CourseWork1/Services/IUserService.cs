@@ -9,7 +9,9 @@ namespace CourseWork1.Services
 {
     public interface IUserService
     {
+        //to register user
         Task SaveUserAsync(User user);
+        //to view users
         Task<List<User>> GetAllUsersAsync();
     }
 }

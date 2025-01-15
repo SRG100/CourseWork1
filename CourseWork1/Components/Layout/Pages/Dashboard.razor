@@ -1,44 +1,62 @@
 ﻿@page "/dashboard"
 @using CourseWork1.Models
 @using CourseWork1.Services
+@using MudBlazor
 @inject ITransactions transactionsService
 @inject ITags tagService
 @inject AuthenticationService authenticateUser
 
 <style>
     .top{
-        width: 150px;
-        margin:20px;
-        align-content:center;
-        justify-content:center;
-    }
-
-    .form-control{
-        
+    width: 150px;
+    margin:20px;
+    align-content:center;
+    justify-content:center;
     }
 
 </style>
 
+
 <h3>Dashboard</h3>
+
+
+@* to show the errors  *@
 @if (!string.IsNullOrEmpty(errormessage))
 {
-            <div class="error-overlay">
-            <dialog class="error-dialog" open>
-                <h2>Error</h2>
-                    <p>@errormessage</p>
-                <button class="close-btn" @onclick="CloseDialog">❌</button>
-            </dialog>
-        </div>
+    <div class="error-overlay">
+        <dialog class="error-dialog" open>
+            <h2>Error</h2>
+            <p>@errormessage</p>
+            <button class="close-btn" @onclick="CloseDialog">❌</button>
+        </dialog>
+    </div>
 
 }
 
-
-<div class=" top">
-    <label for="monthPicker" class="form-label">Choose a :</label>
-    <input type="month" @bind="Month" data-provide="datepicker" class="form-control" />
-    <button type="button" class="btn btn-outline-primary" @onclick="SelectMonth"> Filter Month </button>
+@* section  for selecting the month or the date range  *@
+<div class="d-flex justify-content-center align-items-center">
+    <div class="top text-center">
+        <label for="monthPicker" style="margin:5px">Choose a Month:</label>
+        <input type="month" @bind="Month" class="form-control" style="margin:5px" />
+        <button type="button" class="btn btn-outline-primary" @onclick="SelectMonth" style="margin:5px">Filter Month</button>
+    </div>
+    <div class="top text-center">
+        <label for="monthPicker" style="margin:5px">Or select date range</label>
+        <button type="button" class="btn btn-outline-primary" @onclick="SelectRangeShow" style="margin:5px">Select Date Range</button>
+        @if (dateRange == true)
+        {
+            <div class="popup">
+                <label>From:</label>
+                <input type="date"  class="form-control" style="margin:5px" @bind="From" />
+                <label>To:</label>
+                <input type="date"  class="form-control" style="margin:5px" @bind="To" />
+                <button type="button" class="btn btn-primary" @onclick="IntervalDate"> <i class='bx bx-filter-alt'></i> </button>
+            </div>
+        }
+    </div>
 </div>
 
+@* the dashboard card with the income, expense, debt, etc *@
 <div class="container">
     <div class="row">
 
@@ -86,25 +104,47 @@
     </div>
 </div>
 
-The transactions of the month: @expenseMonth are:
 
+@* The section with bar graph *@
+<div>
+    <MudChart ChartType="ChartType.Bar" ChartSeries="@Series" XAxisLabels="@XAxisLabels" Width="100%" Height="350px">
+</MudChart>
+</div>
+
+
+@* For the selection of the transaction type *@
+<p>
+    The total number of transactions  are: @totalTransactions
+    <br/>
+    Select the transaction type:
+    <select class="form-select" aria-label="Default select example" @onchange="Update">
+        <option selected value="Income">Income</option>
+        <option value="Expense">Expense</option>
+        <option value="Debt">Debt</option>
+        <option value="PaidDebt">Paid Debt</option>
+    </select>
+    <br/>
+    The transactions are:
+</p>
+
+@* The table for display of the top 5 of desired transaction type according to the amount *@
 <table class="table">
     <thead>
         <tr>
             <th scope="col"> Transaction Name </th>
 
-            <th scope="col"> TransactionType </th>
+            <th scope="col"> 
+                @transactionType
+            </th>
             <th scope="col">  TransactionDate </th>
             <th scope="col"> Tags</th>
-            <th scope="col"> Note </th>
             <th scope="col">  Amount
                 <button type="button" @onclick="Up"> <i class="fa-solid fa-arrow-up"></i> </button>
 
             </th>
-            <th scope="col"> DebtSource</th>
-            <th scope="col">DebtDueDate</th>
         </tr>
     </thead>
+    @* for values from the json file  *@
     <tbody>
 
         @foreach (var transaction in existingTransactions)
@@ -115,29 +155,10 @@ The transactions of the month: @expenseMonth are:
                 <td>@transaction.TransactionDate.ToString("yyyy-MM-dd")</td>
 
                 <td> @transaction.Tags </td>
-                @if (@transaction.Note == null)
-                {
-                    <td> NO NOTES </td>
 
-                }
-                else
-                {
-                    <td>
-                        @transaction.Note
-                    </td>
-                }
 
                 <td> <strong> @transaction.Amount.ToString()</strong></td>
-                @if (transaction.TransactionType == "Income" || transaction.TransactionType == "Expense")
-                {
-                    <td>--NA--</td>
-                    <td>--NA--</td>
-                }
-                else
-                {
-                    <td>@transaction.DebtDueDate.ToString("yyyy-MM-dd")</td>
-                    <td>@transaction.DebtSource</td>
-                }
+
 
             </tr>
         }
@@ -145,11 +166,21 @@ The transactions of the month: @expenseMonth are:
 </table>
 
 @code {
+
+    //for bar chart
+    public List<ChartSeries> Series { get; set; } = new List<ChartSeries>();
+    public string[] XAxisLabels { get; set; } = new string[] { };
+
     private List<Transaction> existingTransactions = new List<Transaction>(); //for list of transaction class
     private List<Transaction> monthSpecificTransaction = new List<Transaction>();
 
     private DateTime Month;
     private Boolean AmountUp;
+    private Boolean dateRange=false;
+    private DateTime From; // for from date range
+    private DateTime To; // for to date range
+
+    private decimal totalTransactions;
     private decimal totalIncome;
     private decimal totalExpense;
     private decimal paidDebt;
@@ -158,63 +189,193 @@ The transactions of the month: @expenseMonth are:
     private string expenseMonth;
     private string expenseYear;
 
+    private string transactionType = "Income";
+
     private decimal pendingDebt;
     private decimal totalBalance;
 
+    //for bar chart
+    private void InitializeChartData()
+    {
+        Series = new List<ChartSeries>
+        {
+            new ChartSeries { Name = "Income", Data = new double[] { (double)totalIncome } },
+            new ChartSeries { Name = "Expense", Data = new double[] { (double)totalExpense } },
+            new ChartSeries { Name = "Debt", Data = new double[] { (double)totalDebt } }
+        };
+
+        XAxisLabels = new[] { "Income, Expense and Debt for the selected date range" };
+    }
 
     //run all these when dashboard is first loaded
     protected override async Task OnInitializedAsync()
     {
-        expenseMonth = Month.ToString("MMMM");
-        expenseYear = Month.ToString("yyyy");
-        int currentUserID = authenticateUser.GetCurrentUser().UserId;
-        await CalculateTotals(currentUserID);
-        Month = DateTime.Now;
-        await SelectMonth();
+        try
+        {
+            expenseMonth = Month.ToString("MMMM");
+            expenseYear = Month.ToString("yyyy");
+
+            int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            await CalculateTotals(currentUserID);
+            Month = DateTime.Now;
+            From = DateTime.Now;
+            To = DateTime.Now;
+            await SelectMonth();
+            InitializeChartData();
+        }
+        catch (Exception e)
+        {
+            errormessage = e.Message;
+        }
+
     }
+    //used for ordering the amount by ascending or descending
     public async Task Up()
     {
-        if (AmountUp == true)
+        try
         {
-            existingTransactions = monthSpecificTransaction.OrderBy(t => t.Amount).Take(5).ToList();
-            AmountUp = false;
+            if (AmountUp == true) //if is by desending then ascending is done
+            {
+                existingTransactions = monthSpecificTransaction.OrderBy(t => t.Amount).Take(5).ToList();
+                AmountUp = false;
+
+            }
+            else
+            {
+                AmountUp = true;
+                existingTransactions = monthSpecificTransaction.OrderByDescending(t => t.Amount).Take(5).ToList();
+            }
+        }
+        catch (Exception ex) //exception handling
+        {
+            errormessage = ex.Message;
+        }
+
+    }
+
+    // using event handling to change the value of transaction type based on the selected transaction type
+    public async Task Update(ChangeEventArgs e)
+    {
+
+        try
+        {
+            transactionType = e.Value.ToString();
+            int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            await CalculateTotals(currentUserID);
+        }
+        catch (Exception ex)
+        {
+            errormessage = ex.Message;
+        }
+
+    }
+
+    //to show the date range choosing place
+    public void SelectRangeShow()
+    {
+        try
+        {
+            dateRange = true;
+        }
+        catch(Exception e)
+        {
+            errormessage = e.Message;
+        }
+
+    }
+
+    private async Task IntervalDate()
+    {
+        try
+        {
+
+            int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            await CalculateTotals(currentUserID);
+            InitializeChartData();
 
         }
-        else
+        catch (Exception e) //
         {
-            AmountUp = true;
-            existingTransactions = monthSpecificTransaction.OrderByDescending(t => t.Amount).Take(5).ToList();
+            errormessage = e.Message;
         }
     }
+
     //to select the specific month for filtering
     public async Task SelectMonth()
     {
-        expenseMonth = Month.ToString("MMMM");
-        expenseYear = Month.ToString("yyyy");
-        
-        int currentUserID = authenticateUser.GetCurrentUser().UserId;
-        await CalculateTotals(currentUserID);
+        try
+        {
+            dateRange = false;
+            expenseMonth = Month.ToString("MMMM");
+            expenseYear = Month.ToString("yyyy");
+
+            int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            await CalculateTotals(currentUserID);
+            InitializeChartData();
+
+        }
+        catch (Exception ex)
+        {
+            errormessage = ex.Message;
+        }
+
 
     }
+
+    //to close the error box, the error message is set to null 
     private void CloseDialog()
     {
-        errormessage = null;
+        try
+        {
+            errormessage = null;
+        }
+        catch (Exception e)
+        {
+            errormessage = e.Message;
+        }
     }
     //to calculate the total transactions values
     public async Task CalculateTotals(int userId)
     {
-        existingTransactions = await transactionsService.GetTransactionsByUserIdAsync(userId);//to get existing transactions based on the logged in user
-        monthSpecificTransaction = existingTransactions
-                                    .FindAll(et => et.TransactionDate.ToString("MMMM") == expenseMonth 
-                                    &&
-                                    et.TransactionDate.ToString("yyyy") == expenseYear).ToList(); // getting the transactions based on the month selected
-        totalIncome = monthSpecificTransaction.Where(t => t.TransactionType == "Income").Sum(t => t.Amount);
-        totalExpense = monthSpecificTransaction.Where(t => t.TransactionType == "Expense").Sum(t => t.Amount);
-        totalDebt = monthSpecificTransaction.Where(t => t.TransactionType == "Debt").Sum(t => t.Amount);
-        paidDebt = monthSpecificTransaction.Where(t => t.TransactionType == "PaidDebt").Sum(t => t.Amount);
-        totalBalance = totalIncome - totalExpense + totalDebt; //adding total debt as well beacuse the user cant pay with the collected
-        pendingDebt = totalDebt - paidDebt;
-        existingTransactions = monthSpecificTransaction.OrderByDescending(t => t.Amount).Take(5).ToList();
-        AmountUp = true;
+        //calculating the totals
+        try
+        {
+            existingTransactions = await transactionsService.GetTransactionsByUserIdAsync(userId);//to get existing transactions based on the logged in user
+            totalTransactions = existingTransactions.Count; 
+            //checking if the date range has been selected 
+            if (dateRange == false) //if not selected then filtered in months
+            {
+                monthSpecificTransaction = existingTransactions
+                                            .FindAll(et => et.TransactionDate.ToString("MMMM") == expenseMonth
+                                            &&
+                                            et.TransactionDate.ToString("yyyy") == expenseYear).ToList()
+
+                                            ; // getting the transactions based on the month selected
+
+            }
+            else //if selected then filtered by the range
+            {
+                monthSpecificTransaction = existingTransactions.FindAll(et => et.TransactionDate >= From && et.TransactionDate <= To);
+
+            }
+
+            totalIncome = monthSpecificTransaction.Where(t => t.TransactionType == "Income").Sum(t => t.Amount);
+            totalExpense = monthSpecificTransaction.Where(t => t.TransactionType == "Expense").Sum(t => t.Amount);
+            totalDebt = monthSpecificTransaction.Where(t => t.TransactionType == "Debt").Sum(t => t.Amount);
+            paidDebt = monthSpecificTransaction.Where(t => t.TransactionType == "PaidDebt").Sum(t => t.Amount);
+            totalBalance = totalIncome - totalExpense + totalDebt; //adding total debt as well beacuse the user cant pay with the collected
+            pendingDebt = totalDebt - paidDebt;
+            InitializeChartData();
+
+            existingTransactions = monthSpecificTransaction.FindAll(t => t.TransactionType == transactionType).OrderByDescending(t => t.Amount).Take(5).ToList();
+
+            AmountUp = true;
+
+        }
+        catch (Exception e)
+        {
+            errormessage = e.Message;
+        }
+        
     }
-}
+  }

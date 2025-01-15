@@ -8,7 +8,7 @@
 @inject NavigationManager navigationManager
 
 
-
+@* use of mudblazor for register form *@
 <MudContainer Width="MaxWidth.Medium" Class="mt-4">
     <MudGrid Justify="Justify.Center" AlignItems="AlignItems.Center">
         <MudItem xs="12" sm="6" lg="4">
@@ -42,11 +42,11 @@
                     <MudGrid Spacing="2">
                         <MudItem xs="6">
                             <MudTextField T="string" Label="Job Position" Required="true" Variant="Variant.Outlined"
-                                          RequiredError="Job Position is required!" @bind-Value="newUser.JobPosition" />
+                            RequiredError="Job Position is required!" @bind-Value="newUser.JobPosition" />
                         </MudItem>
                         <MudItem xs="6">
                             <MudTextField T="string" Label="Currency" Required="true" Variant="Variant.Outlined"
-                                          RequiredError="Currency is required!" @bind-Value="newUser.Currency" />
+                            RequiredError="Currency is required!" @bind-Value="newUser.Currency" />
 
                         </MudItem>
                     </MudGrid>
@@ -55,7 +55,7 @@
 
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-4" OnClick="@RegisterUser">Register</MudButton>
                 </MudForm>
-                
+
                 <MudText Typo="Typo.body1" Class="mt-4">
                     Already have an account? <MudLink Href="/" Color="Color.Primary">Login</MudLink>
                 </MudText>
@@ -72,20 +72,28 @@
     private bool isValid;
     private string errorMessage;
     private User newUser = new User();
+
+    //used to close the error message that pop-uped
     private void CloseDialog()
     {
-        errorMessage = null;
-    }
-    private async Task RegisterUser()
-    {
-        await registerForm.Validate();
-        if (!isValid)
-        {
-            return;
-        }
-
         try
         {
+            errorMessage = null;
+        }
+        catch(Exception e)
+        {
+            errorMessage = $"Error while closing the Close Dialog{e.Message}";
+        }
+
+    }
+
+    //after clicking on register, registers new user into the user json file
+    private async Task RegisterUser()
+    {
+    
+        try
+        {
+            //ckeckinhg for null values
             if (string.IsNullOrWhiteSpace(newUser.FullName) ||
                 string.IsNullOrWhiteSpace(newUser.Gender) ||
                 string.IsNullOrWhiteSpace(newUser.Email) ||
@@ -100,11 +108,17 @@
             }
 
             var existingUsers = await userService.GetAllUsersAsync();
+            //checking for similar user name
             if (existingUsers != null && existingUsers.Any(u => u.UserName == newUser.UserName))
             {
                 throw new Exception("Username already exists. Please choose a different one.");
             }
-
+            //checking for similar email
+            if (existingUsers != null && existingUsers.Any(u => u.Email == newUser.Email))
+            {
+                throw new Exception("Email already exists. Please choose a different one.");
+            }
+            //adding the user
             await userService.SaveUserAsync(newUser);
             navigationManager.NavigateTo("/");
         }

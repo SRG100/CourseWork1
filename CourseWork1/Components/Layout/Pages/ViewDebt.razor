@@ -6,23 +6,38 @@
 
 
 
-
-@if (errormessage!=null)
+@* to show the error  *@
+@if (!string.IsNullOrEmpty(errormessage))
 {
-    <h1 style="color:red">@errormessage</h1>
+    <div class="error-overlay">
+        <dialog class="error-dialog" open>
+            <h2>Error</h2>
+            <p>@errormessage</p>
+            <button class="close-btn" @onclick="CloseDialog">❌</button>
+        </dialog>
+    </div>
+
 }
-<h3>viewDebt</h3>
-<div>
-    <h1>Debt</h1>
-    <h2 style="color:Red">Debt info:@totalDebt</h2>
+
+@* contains the information related to the debt  *@
+<div class="d-flex justify-content-center align-items-center vh-100">
+    <div class="col-md-5 border-right center-container">
+        <div class="p-3 py-5">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="text-right">User Debt Details</h4>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-12"><label class="labels">Total Debt</label><input type="text" class="form-control" value="@totalDebt" readonly></div>
+                <div class="col-md-12"><label class="labels">Paid Debt</label><input type="text" class="form-control" value="@paidDebt" readonly></div>
+                <div class="col-md-12"><label class="labels">Pending Debt</label><input type="text" class="form-control" value="@pendingDebt" readonly style="background-color: #ffcccc; "></div>
+            </div>
+            <div class="mt-5 text-center"><button class="btn btn-primary profile-button" @onclick="Paydebt" type="button">Pay Debt </button></div>
+
+        </div>
+    </div>
 </div>
-<div>
-    <h2 style="color:darkred">Pending Debt:@pendingDebt</h2>
-</div>
-<div>
-    <h2 style="color:saddlebrown">Paid Debt:@paidDebt</h2>
-</div>
-<button type="button" @onclick="Paydebt"> Pay Debt </button>
+
 
 @code {
     private List<Transaction> existingTransactions = new List<Transaction>();
@@ -40,26 +55,41 @@
     private decimal pendingDebt;
     private decimal totalBalance;
 
+    //this method is run when this razor page is opened
     protected override async Task OnInitializedAsync()
     {
-        int currentUserID = authenticateUser.GetCurrentUser().UserId;
+        try
+        {
+            int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            await CalculateTotals(currentUserID);
+        }
+        catch(Exception e)
+        {
+            errormessage = $"The error cccured is: {e.Message}";
+        }
 
-        await CalculateTotals(currentUserID);
     }
 
-    
 
+    //to pay debt taken
     public async Task Paydebt()
     {
         try
         {
-            if (pendingDebt > totalBalance)
+            //checking if the pending balance is greater than total balance or not
+            if (pendingDebt > totalBalance )
             {
-    
-                errormessage = "Cant pay debt without enough balance";
+                throw new Exception("Cant pay debt without enough balance");
+
+            }
+            //checking if there are any debt or not
+            if (pendingDebt ==0)
+            {
+                throw new Exception("No Pending Debt");
 
             }
             int currentUserID = authenticateUser.GetCurrentUser().UserId;
+            //making a new transaction object so that paydebt can be cleared
             newDebt.User_id = currentUserID;
             newDebt.Amount = pendingDebt;
             newDebt.TransactionName = "Debt Pay";
@@ -72,23 +102,45 @@
             errormessage = null;
             await CalculateTotals(currentUserID);
         }
-        catch(Exception e)
+        catch(Exception e) //exception handling
         {
-            
+            errormessage = e.Message;
         }
 
     }
 
+    //for closing the error bar
+    private void CloseDialog()
+    {
+        try
+        {
+            errormessage = null;
+        }
+        catch (Exception e)
+        {
+            errormessage = e.Message;
+        }
+    }
+
+
+    //calculating the totals
     public async Task CalculateTotals(int userId)
     {
-        errormessage = $"Added{userId}";
-        existingTransactions = await transactionsService.GetTransactionsByUserIdAsync(userId);
-        totalIncome = existingTransactions.Where(t => t.TransactionType == "Income").Sum(t => t.Amount);
-        totalExpense = existingTransactions.Where(t => t.TransactionType == "Expense").Sum(t => t.Amount);
-        totalDebt = existingTransactions.Where(t => t.TransactionType == "Debt").Sum(t => t.Amount);
-        paidDebt = existingTransactions.Where(t => t.TransactionType == "PaidDebt").Sum(t => t.Amount);
-        totalBalance = totalIncome - totalExpense - totalDebt; //adding total debt as well beacuse the user cant pay with the collected
-        pendingDebt = totalDebt - paidDebt;
+        //calculation the values
+        try
+        {
+            existingTransactions = await transactionsService.GetTransactionsByUserIdAsync(userId);
+            totalIncome = existingTransactions.Where(t => t.TransactionType == "Income").Sum(t => t.Amount);
+            totalExpense = existingTransactions.Where(t => t.TransactionType == "Expense").Sum(t => t.Amount);
+            totalDebt = existingTransactions.Where(t => t.TransactionType == "Debt").Sum(t => t.Amount);
+            paidDebt = existingTransactions.Where(t => t.TransactionType == "PaidDebt").Sum(t => t.Amount);
+            totalBalance = totalIncome - totalExpense ; 
+            pendingDebt = totalDebt - paidDebt;
+        }
+        catch(Exception e)
+        {
+            errormessage = e.Message;
+        }
     }
 
 }

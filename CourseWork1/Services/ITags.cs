@@ -9,7 +9,9 @@ namespace CourseWork1.Services
 {
     public interface ITags
     {
+        //to add tags
         Task AddTagAsync(Tags tag);
+        //to get tags
         Task<List<Tags>> GetTagsAsync();
     }
 }

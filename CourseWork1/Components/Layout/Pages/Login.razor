@@ -5,6 +5,19 @@
 @inject NavigationManager navigationManager
 @inject AuthenticationService authenticateUser
 
+@* to show the errors  *@
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="error-overlay">
+        <dialog class="error-dialog" open>
+            <h2>Error</h2>
+            <p>@errorMessage</p>
+            <button class="close-btn" @onclick="CloseDialog">❌</button>
+        </dialog>
+    </div>
+
+}
+@* using mudblazor for login page *@
 <div class="center-container">
     <MudContainer Width="MaxWidth.Medium">
         <MudGrid Justify="Justify.Center" AlignItems="AlignItems.Center">
@@ -35,21 +48,30 @@
     private string password;
     private string errorMessage;
 
-    
 
+    //to close the error box, the error message is set to null
+    private void CloseDialog()
+    {
+        try
+        {
+            errorMessage = null;
+        }
+        catch (Exception e)
+        {
+            errorMessage = e.Message;
+        }
+    }
+
+    //checks if the user exists or not
     private async Task LoginUser()
     {
-        await loginForm.Validate();
-        if (!isValid)
-        {
-            return;
-        }
 
         try
         {
+            //all the users are loaded
             var users = await userService.GetAllUsersAsync();
             var user = users.FirstOrDefault(u => u.UserName == username && u.Password == HashPassword(password));
-
+            // if the user is not null then the user is authenticated
             if (user != null)
             {
                 authenticateUser.SetCurrentUser(user);
@@ -57,22 +79,32 @@
             }
             else
             {
-                errorMessage = "Invalid username or password.";
+                throw new Exception("Invalid username or password.");
+
             }
-        }
+        } //error handling
         catch (Exception ex)
         {
             errorMessage = $"Error occurred during login: {ex.Message}";
         }
     }
-
+    // the password us hashed for security purposes
     private string HashPassword(string password)
     {
-        using (var sha256 = System.Security.Cryptography.SHA256.Create())
+        try
         {
-            var bytes = System.Text.Encoding.UTF8.GetBytes(password);
-            var hash = sha256.ComputeHash(bytes);
-            return Convert.ToBase64String(hash);
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            {
+                var bytes = System.Text.Encoding.UTF8.GetBytes(password);
+                var hash = sha256.ComputeHash(bytes);
+                return Convert.ToBase64String(hash);
+            }
         }
+        catch(Exception ex)
+        {
+            errorMessage = ex.Message;
+            return errorMessage;
+        }
+
     }
 }

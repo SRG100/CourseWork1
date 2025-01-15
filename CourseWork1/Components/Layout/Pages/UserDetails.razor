@@ -6,6 +6,8 @@
 
 @using CourseWork1.Models
 
+
+@* for error message  *@
 @if (!string.IsNullOrEmpty(errorMessage))
 {
 
@@ -19,7 +21,7 @@
 
 }
 
-
+@* form that contains the data of the user  *@
 <div class="d-flex justify-content-center align-items-center vh-100">
     <div class="col-md-5 border-right center-container">
         <div class="p-3 py-5">
@@ -82,13 +84,14 @@
             errorMessage = e.Message;
         }
     }
-
+    //getting user info using the userid
     public async Task GetUserInfo(int userId)
     {
         try
         {
             TotalUsers = await userServices.GetAllUsersAsync();
             var currentUser = TotalUsers.FirstOrDefault(t => t.UserId == userId);
+            //retriving and storing the details of the users
             Fullname = currentUser.FullName;
             UserName = currentUser.UserName;
             Gender = currentUser.Gender;
@@ -98,7 +101,7 @@
             JobPosition = currentUser.JobPosition;
             Currency = currentUser.Currency;
         }
-        catch(Exception e)
+        catch(Exception e) //exception handling
         {
             errorMessage = e.Message;
         }

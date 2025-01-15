@@ -5,7 +5,7 @@
 @inject ITags tagService
 @inject AuthenticationService authenticateUser
 
-
+@* error message *@
 @if (!string.IsNullOrEmpty(errorMessage))
 {
     <div class="error-parent">
@@ -19,6 +19,8 @@
     </div>
 
 }
+
+@* form for  adding transaction *@
 <div class="container">
     <div class="signup-content">
         <form id="transaction-form" class="signup-form">
@@ -49,12 +51,14 @@
                 <label for="transaction-date">Transaction Date:</label>
                 <input type="date" class="form-input" id="transaction-date" placeholder="Transaction Date" @bind="newTransaction.TransactionDate" />
             </div>
+            @* if add new tag is clicked *@
             @if (!addnewTag)
             {
                 <div class="form-group">
                     <label for="transaction-tags">Select Tag:</label>
                     <select class="form-input" id="transaction-tags" @bind="newTransaction.Tags">
                         <option value=""></option>
+                        @* getting all the tag from the tag json file *@
                         @foreach (var Tag in existingTags)
                         {
                             <option value="@Tag.TransactionTag">@Tag.TransactionTag</option>
@@ -63,6 +67,7 @@
                 </div>
             }
 
+            @* if the tag is not selected then this section is showed *@
             @if (newTransaction.Tags == null && clicked==true)
             {
                 <div class="form-group">
@@ -70,6 +75,7 @@
                 </div>
             }
 
+           @* if the add new tag button is clicked then this section for adding new tag is shown *@
             @if (addnewTag)
             {
 
@@ -80,7 +86,7 @@
                     <button type="button" class="btn btn-outline-primary" @onclick="AddCustomTag">Add Tag</button>
                 </div>
             }
-
+            @* this input feild are shown if the transaction type is debt *@
             @if (newTransaction.TransactionType == "Debt")
             {
                 <div class="form-group">
@@ -100,7 +106,7 @@
                 <input type="text" class="form-input" placeholder="Add Note(Optional)" @bind="newTransaction.Note" />
             </div>
 
-
+            
             <div class="form-group">
                 <button type="button" class="form-submit" @onclick="AddNewTransaction">Add Transaction</button>
             </div>
@@ -127,30 +133,66 @@
     private decimal paidDebt;
     private decimal pendingDebt;
 
-
+    //to close the error popup
     private void CloseDialog()
     {
-        errorMessage = null;
+        try
+        {
+            errorMessage = null;
+        }
+        catch (Exception e)
+        {
+            errorMessage = e.Message;
+        }
+        
     }
+
+    //method that runs when initialized
     protected override async Task OnInitializedAsync()
     {
-        existingTags = await tagService.GetTagsAsync();
-        newTransaction.TransactionDate = DateTime.Now;
-        newTransaction.DebtDueDate = DateTime.Now;
-    }
+        try
+        {
 
+            existingTags = await tagService.GetTagsAsync();
+            newTransaction.TransactionDate = DateTime.Now;
+            newTransaction.DebtDueDate = DateTime.Now;
+        }
+        catch (Exception e)
+        {
+            errorMessage = e.Message;
+        }
+
+    }
+    //for to add custom tag to appear
     private async Task AddCustomTagOption()
     {
-        addnewTag = true;
-        clicked = false;
+        try
+        {
+            addnewTag = true;
+            clicked = false;
 
+        }
+        catch (Exception e)
+        {
+            errorMessage = e.Message;
+        }
+        
     }
-
+    //to add note 
     private async Task AddNote()
     {
-        addNote = true;
+        try
+        {
+            addNote = true;
+        }
+        catch(Exception e)
+        {
+            errorMessage = e.Message;
+        }
 
     }
+
+    //to add custom tag
     private async Task AddCustomTag()
     {
         try
@@ -158,6 +200,7 @@
             addnewTag = true;
 
             var existingTags = await tagService.GetTagsAsync();
+            //checking if the custom tag already exists or not
             if (existingTags != null)
             {
                 var sametag = existingTags.FirstOrDefault(et => et.TransactionTag == newTransaction.Tags);
@@ -181,18 +224,23 @@
 
     }
 
-
+    //adding new transactions
     private async Task AddNewTransaction()
     {
         try
         {
+            //checking for null or empty values
             if (string.IsNullOrWhiteSpace(newTransaction.Tags) || string.IsNullOrWhiteSpace(newTransaction.TransactionName) || string.IsNullOrWhiteSpace(newTransaction.TransactionType))
             {
                 throw new Exception("Emply Space found, please insert data in all feild");
             }
             int currentUserID = authenticateUser.GetCurrentUser().UserId;
             newTransaction.User_id = currentUserID;
+
+            //getting all the transactions of  a user 
             var existingTransactionsOfUser = await transactionsService.GetTransactionsByUserIdAsync(currentUserID);
+
+            //calculationg the amounts for adding debt and expense
             totalIncome = existingTransactionsOfUser.Where(t => t.TransactionType == "Income").Sum(t => t.Amount);
             totalExpense = existingTransactionsOfUser.Where(t => t.TransactionType == "Expense").Sum(t => t.Amount);
             totalBalance = totalIncome - totalExpense;
@@ -200,7 +248,7 @@
             paidDebt = existingTransactionsOfUser.Where(t => t.TransactionType == "PaidDebt").Sum(t => t.Amount);
             pendingDebt = totalDebt - paidDebt;
 
-
+            //if the expense is greater than the income then it is not allowed
             if (newTransaction.TransactionType == "Expense")
             {
                 if (totalBalance < newTransaction.Amount)
@@ -208,6 +256,7 @@
                     throw new Exception("Insufficient Balance");
                 }
             }
+            //if a debt is already pending then it is not allowed
             if (newTransaction.TransactionType == "Debt")
             {
                 if (pendingDebt >0)
@@ -215,6 +264,7 @@
                     throw new Exception("Please Pay your previous debt first");
                 }
             }
+            //if the amount section has nevative or xero value, error occurs
             if (newTransaction.Amount == 0 || newTransaction.Amount < 0)
             {
                 throw new Exception("Please insert amount greater than zero");
