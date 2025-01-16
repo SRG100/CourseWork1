@@ -231,7 +231,10 @@
                 errorMessage = null;
                 int currentUserID = authenticateUser.GetCurrentUser().UserId;
                 existingTransaction = await transactionsService.GetTransactionsByUserIdAsync(currentUserID); //getting all the transactions of the user
-                searchResult = existingTransaction.FindAll(et => et.TransactionName.ToLower().Contains(searchedTitle.ToLower()));
+                searchResult = existingTransaction.FindAll(et => et.TransactionName.ToLower().Contains(searchedTitle.ToLower()) 
+                                || et.TransactionType.ToLower().Contains(searchedTitle.ToLower()) 
+                                || et.Tags.ToLower().Contains(searchedTitle.ToLower()) 
+                                || et.Note.ToLower().Contains(searchedTitle.ToLower()));
                 existingTransaction = searchResult;
                 existingSearch = true;
             }

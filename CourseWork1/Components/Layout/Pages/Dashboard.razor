@@ -236,14 +236,15 @@
         {
             if (AmountUp == true) //if is by desending then ascending is done
             {
-                existingTransactions = monthSpecificTransaction.OrderBy(t => t.Amount).Take(5).ToList();
+                existingTransactions = monthSpecificTransaction.FindAll(t => t.TransactionType == transactionType).OrderBy(t => t.Amount).Take(5).ToList();
                 AmountUp = false;
 
             }
             else
             {
                 AmountUp = true;
-                existingTransactions = monthSpecificTransaction.OrderByDescending(t => t.Amount).Take(5).ToList();
+                existingTransactions = monthSpecificTransaction.FindAll(t => t.TransactionType == transactionType).OrderByDescending(t => t.Amount).Take(5).ToList();
+
             }
         }
         catch (Exception ex) //exception handling
