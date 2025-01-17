@@ -7,7 +7,17 @@
 
 @inject NavigationManager navigationManager
 
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="error-overlay">
+        <dialog class="error-dialog" open>
+            <h2>Error</h2>
+            <p>@errorMessage</p>
+            <button class="close-btn" @onclick="CloseDialog">❌</button>
+        </dialog>
+    </div>
 
+}
 @* use of mudblazor for register form *@
 <MudContainer Width="MaxWidth.Medium" Class="mt-4">
     <MudGrid Justify="Justify.Center" AlignItems="AlignItems.Center">
@@ -61,9 +71,9 @@
                 </MudText>
             </MudPaper>
         </MudItem>
-        <MudItem xs="12" sm="6" lg="4">
-            <MudImage Src="NewFolder\loginsign.png" Alt="Registration" Elevation="25" Class="rounded-lg" />
-        </MudItem>
+        @* <MudItem xs="12" sm="6" lg="4"> *@
+        @*     <MudImage Src="NewFolder\loginsign.png" Alt="Registration" Elevation="25" Class="rounded-lg" /> *@
+        @* </MudItem> *@
     </MudGrid>
 </MudContainer>
 

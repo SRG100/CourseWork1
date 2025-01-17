@@ -30,6 +30,7 @@
             <div class="row mt-3">
                 <div class="col-md-12"><label class="labels">Total Debt</label><input type="text" class="form-control" value="@totalDebt" readonly></div>
                 <div class="col-md-12"><label class="labels">Paid Debt</label><input type="text" class="form-control" value="@paidDebt" readonly></div>
+                <div class="col-md-12"><label class="labels">Total Balance without Debt</label><input type="text" class="form-control" value="@totalBalance" readonly></div>
                 <div class="col-md-12"><label class="labels">Pending Debt</label><input type="text" class="form-control" value="@pendingDebt" readonly style="background-color: #ffcccc; "></div>
             </div>
             <div class="mt-5 text-center"><button class="btn btn-primary profile-button" @onclick="Paydebt" type="button">Pay Debt </button></div>
@@ -53,6 +54,7 @@
     private string expenseMonth;
 
     private decimal pendingDebt;
+    private decimal justPaid;
     private decimal totalBalance;
 
     //this method is run when this razor page is opened
@@ -96,6 +98,8 @@
             newDebt.TransactionType = "PaidDebt";
             newDebt.Tags = "DebtPay";
             newDebt.TransactionDate = DateTime.Now;
+            totalIncome = totalIncome - pendingDebt;
+            justPaid = pendingDebt;
             await transactionsService.AddTransactionsAsync(newDebt);
             newDebt = new Transaction();
             newDebt.TransactionDate = DateTime.Now;
@@ -134,7 +138,8 @@
             totalExpense = existingTransactions.Where(t => t.TransactionType == "Expense").Sum(t => t.Amount);
             totalDebt = existingTransactions.Where(t => t.TransactionType == "Debt").Sum(t => t.Amount);
             paidDebt = existingTransactions.Where(t => t.TransactionType == "PaidDebt").Sum(t => t.Amount);
-            totalBalance = totalIncome - totalExpense ; 
+            totalIncome = totalIncome - paidDebt;
+            totalBalance = totalIncome - totalExpense ;
             pendingDebt = totalDebt - paidDebt;
         }
         catch(Exception e)
